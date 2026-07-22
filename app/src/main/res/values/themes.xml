@@ -136,15 +136,15 @@
     </style>
 
     <!-- Shape appearances -->
-    <style name="Shape.SmsForwarder.Small" parent="Shape.Material3.Corner.Small">
+    <style name="Shape.SmsForwarder.Small">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">8dp</item>
     </style>
-    <style name="Shape.SmsForwarder.Medium" parent="Shape.Material3.Corner.Medium">
+    <style name="Shape.SmsForwarder.Medium">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">16dp</item>
     </style>
-    <style name="Shape.SmsForwarder.Large" parent="Shape.Material3.Corner.Large">
+    <style name="Shape.SmsForwarder.Large">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">28dp</item>
     </style>

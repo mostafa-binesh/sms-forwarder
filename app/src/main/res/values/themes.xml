@@ -43,9 +43,6 @@
         <item name="android:textColorHint">@color/text_hint</item>
 
         <!-- Shapes -->
-        <item name="shapeAppearanceSmallComponent">@style/Shape.SmsForwarder.Small</item>
-        <item name="shapeAppearanceMediumComponent">@style/Shape.SmsForwarder.Medium</item>
-        <item name="shapeAppearanceLargeComponent">@style/Shape.SmsForwarder.Large</item>
     </style>
 
     <!-- Night-mode overrides -->
@@ -135,19 +132,14 @@
         <item name="trackTint">@color/switch_track_off</item>
     </style>
 
-    <!-- Base shape (implicit parent for Shape.SmsForwarder.*) -->
-    <style name="Shape.SmsForwarder" />
 
     <!-- Shape appearances -->
-    <style name="Shape.SmsForwarder.Small">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">8dp</item>
     </style>
-    <style name="Shape.SmsForwarder.Medium">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">16dp</item>
     </style>
-    <style name="Shape.SmsForwarder.Large">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">28dp</item>
     </style>

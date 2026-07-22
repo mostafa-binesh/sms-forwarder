@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Base app theme — Material3 DayNight -->
+    <style name="Theme.SmsForwarder" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+        <item name="colorOnPrimary">@color/text_on_primary</item>
+        <item name="colorPrimaryContainer">@color/chip_background</item>
+        <item name="colorOnPrimaryContainer">@color/primary</item>
+
+        <!-- Secondary / Accent -->
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorOnSecondary">@color/text_on_accent</item>
+        <item name="colorSecondaryContainer">@color/success_light</item>
+        <item name="colorOnSecondaryContainer">@color/primary</item>
+
+        <!-- Tertiary -->
+        <item name="colorTertiary">@color/accent_dark</item>
+
+        <!-- Surface / Background -->
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorSurface">@color/card</item>
+        <item name="colorSurfaceVariant">@color/surface_variant</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+
+        <!-- Error -->
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/text_on_primary</item>
+        <item name="colorErrorContainer">@color/error_light</item>
+        <item name="colorOnErrorContainer">@color/error</item>
+
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/status_bar</item>
+        <item name="android:navigationBarColor">@color/primary_dark</item>
+
+        <!-- Text -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+
+        <!-- Shapes -->
+        <item name="shapeAppearanceSmallComponent">@style/Shape.SmsForwarder.Small</item>
+        <item name="shapeAppearanceMediumComponent">@style/Shape.SmsForwarder.Medium</item>
+        <item name="shapeAppearanceLargeComponent">@style/Shape.SmsForwarder.Large</item>
+    </style>
+
+    <!-- Night-mode overrides -->
+    <style name="Theme.SmsForwarder.Night" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">@color/primary_dark</item>
+        <item name="colorPrimaryContainer">@color/primary_dark</item>
+        <item name="colorOnPrimaryContainer">@color/accent_light</item>
+        <item name="colorSecondary">@color/accent_light</item>
+        <item name="colorOnSecondary">@color/primary_dark</item>
+        <item name="android:colorBackground">@color/background_night</item>
+        <item name="colorSurface">@color/card_night</item>
+        <item name="colorSurfaceVariant">#2A2A2A</item>
+        <item name="colorOnSurface">@color/text_primary_night</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary_night</item>
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/text_on_primary</item>
+        <item name="android:statusBarColor">@color/card_night</item>
+        <item name="android:navigationBarColor">@color/card_night</item>
+        <item name="android:textColorPrimary">@color/text_primary_night</item>
+        <item name="android:textColorSecondary">@color/text_secondary_night</item>
+        <item name="android:textColorHint">@color/text_secondary_night</item>
+    </style>
+
+    <!-- CardView style -->
+    <style name="Widget.SmsForwarder.CardView" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">@color/card</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">2dp</item>
+        <item name="contentPadding">16dp</item>
+    </style>
+
+    <!-- Material Button — Primary -->
+    <style name="Widget.SmsForwarder.Button.Primary" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/primary</item>
+        <item name="android:textColor">@color/text_on_primary</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+    </style>
+
+    <!-- Material Button — Outline -->
+    <style name="Widget.SmsForwarder.Button.Outline" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="strokeColor">@color/primary</item>
+        <item name="android:textColor">@color/primary</item>
+        <item name="cornerRadius">12dp</item>
+    </style>
+
+    <!-- Material Button — Text -->
+    <style name="Widget.SmsForwarder.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/accent</item>
+    </style>
+
+    <!-- Text input -->
+    <style name="Widget.SmsForwarder.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/primary</item>
+        <item name="hintTextColor">@color/accent</item>
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
+    </style>
+
+    <!-- Chip style -->
+    <style name="Widget.SmsForwarder.Chip" parent="Widget.Material3.Chip.Assist">
+        <item name="chipBackgroundColor">@color/chip_background</item>
+        <item name="chipStrokeColor">@color/primary_light</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="chipCornerRadius">20dp</item>
+        <item name="android:textColor">@color/chip_text</item>
+        <item name="chipMinHeight">36dp</item>
+    </style>
+
+    <!-- Negative chip -->
+    <style name="Widget.SmsForwarder.Chip.Negative" parent="Widget.Material3.Chip.Assist">
+        <item name="chipBackgroundColor">@color/chip_negative_background</item>
+        <item name="chipStrokeColor">@color/error</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="chipCornerRadius">20dp</item>
+        <item name="android:textColor">@color/chip_negative_text</item>
+        <item name="chipMinHeight">36dp</item>
+    </style>
+
+    <!-- Switch -->
+    <style name="Widget.SmsForwarder.Switch" parent="Widget.Material3.Switch">
+        <item name="thumbTint">@color/switch_thumb_off</item>
+        <item name="trackTint">@color/switch_track_off</item>
+    </style>
+
+    <!-- Shape appearances -->
+    <style name="Shape.SmsForwarder.Small" parent="Shape.Material3.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+    <style name="Shape.SmsForwarder.Medium" parent="Shape.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+    <style name="Shape.SmsForwarder.Large" parent="Shape.Material3.LargeComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">28dp</item>
+    </style>
+
+    <!-- Toolbar theme -->
+    <style name="Theme.SmsForwarder.Toolbar" parent="ThemeOverlay.Material3.Dark.ActionBar">
+        <item name="android:textColorPrimary">@color/toolbar_text</item>
+        <item name="android:textColorSecondary">@color/toolbar_text</item>
+    </style>
+
+</resources>

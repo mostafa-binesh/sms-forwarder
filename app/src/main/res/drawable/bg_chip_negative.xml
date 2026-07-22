@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <!-- Rounded rectangle -->
+    <corners
+        android:radius="20dp" />
+
+    <!-- Red-tinted chip background for negative keywords -->
+    <solid
+        android:color="#FFEBEE" />
+
+    <!-- Red border -->
+    <stroke
+        android:width="1dp"
+        android:color="#EF9A9A" />
+
+    <!-- Internal padding -->
+    <padding
+        android:left="12dp"
+        android:top="6dp"
+        android:right="12dp"
+        android:bottom="6dp" />
+
+</shape>

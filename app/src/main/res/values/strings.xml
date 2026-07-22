@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">SmsForwarder</string>
+
+    <!-- Toolbar -->
+    <string name="toolbar_title">forwarder پیامک</string>
+    <string name="toolbar_subtitle">ارسال پیامک به تلگرام</string>
+
+    <!-- Bot Configuration -->
+    <string name="card_bot_config">تنظیمات ربات تلگرام</string>
+    <string name="label_bot_token">توکن ربات (Bot Token)</string>
+    <string name="hint_bot_token">توکن ربات تلگرام خود را وارد کنید</string>
+    <string name="label_chat_id">شناسه چت (Chat ID)</string>
+    <string name="hint_chat_id">شناسه چت یا گروه تلگرام</string>
+    <string name="btn_test_connection">تست اتصال</string>
+    <string name="btn_save_config">ذخیره تنظیمات</string>
+    <string name="msg_connection_success">اتصال با موفقیت برقرار شد</string>
+    <string name="msg_connection_failed">خطا در اتصال به تلگرام</string>
+    <string name="msg_config_saved">تنظیمات با موفقیت ذخیره شد</string>
+    <string name="msg_fill_all_fields">لطفاً تمام فیلدها را پر کنید</string>
+
+    <!-- Enable/Disable -->
+    <string name="card_enable">فعال‌سازی</string>
+    <string name="label_enable_forwarding">فعال‌سازی ارسال پیامک</string>
+    <string name="desc_enable_forwarding">با فعال کردن این گزینه، پیامک‌های دریافتی به تلگرام ارسال می‌شوند</string>
+    <string name="status_enabled">فعال</string>
+    <string name="status_disabled">غیرفعال</string>
+
+    <!-- Filter Mode -->
+    <string name="card_filter_mode">حالت فیلتر</string>
+    <string name="label_filter_mode">انتخاب حالت فیلتر پیامک</string>
+    <string name="filter_all">همه پیامک‌ها</string>
+    <string name="filter_keywords">فیلتر بر اساس کلمات کلیدی</string>
+    <string name="filter_senders">فیلتر بر اساس شماره فرستنده</string>
+    <string name="filter_keywords_senders">فیلتر کلمات + شماره‌ها</string>
+
+    <!-- Sender Numbers -->
+    <string name="card_senders">مدیریت شماره‌های فرستنده</string>
+    <string name="label_senders">شماره‌های فرستنده</string>
+    <string name="desc_senders">فقط پیامک‌های دریافتی از این شماره‌ها ارسال می‌شوند</string>
+    <string name="hint_add_sender">شماره جدید را وارد کنید</string>
+    <string name="btn_add_sender">افزودن</string>
+    <string name="btn_remove_sender">حذف</string>
+    <string name="msg_sender_added">شماره اضافه شد</string>
+    <string name="msg_sender_removed">شماره حذف شد</string>
+    <string name="msg_sender_empty">لطفاً شماره را وارد کنید</string>
+    <string name="msg_sender_exists">این شماره قبلاً اضافه شده</string>
+    <string name="label_no_senders">هیچ شماره‌ای اضافه نشده</string>
+
+    <!-- Keywords -->
+    <string name="card_keywords">مدیریت کلمات کلیدی</string>
+    <string name="label_keywords">کلمات کلیدی مثبت</string>
+    <string name="desc_keywords">فقط پیامک‌های حاوی این کلمات ارسال می‌شوند</string>
+    <string name="hint_add_keyword">کلمه کلیدی جدید را وارد کنید</string>
+    <string name="btn_add_keyword">افزودن</string>
+    <string name="btn_remove_keyword">حذف</string>
+    <string name="msg_keyword_added">کلمه اضافه شد</string>
+    <string name="msg_keyword_removed">کلمه حذف شد</string>
+    <string name="msg_keyword_empty">لطفاً کلمه را وارد کنید</string>
+    <string name="msg_keyword_exists">این کلمه قبلاً اضافه شده</string>
+    <string name="label_no_keywords">هیچ کلمه‌ای اضافه نشده</string>
+    <string name="default_keywords">واریز,برداشت,مانده,حساب,انتقال,موجودی,خرید</string>
+
+    <!-- Negative Keywords -->
+    <string name="card_negative_keywords">کلمات کلیدی منفی</string>
+    <string name="label_negative_keywords">کلمات منفی</string>
+    <string name="desc_negative_keywords">پیامک‌های حاوی این کلمات ارسال نمی‌شوند</string>
+    <string name="hint_add_negative_keyword">کلمه منفی جدید را وارد کنید</string>
+    <string name="btn_add_negative_keyword">افزودن</string>
+    <string name="btn_remove_negative_keyword">حذف</string>
+    <string name="msg_negative_keyword_added">کلمه منفی اضافه شد</string>
+    <string name="msg_negative_keyword_removed">کلمه منفی حذف شد</string>
+    <string name="msg_negative_keyword_empty">لطفاً کلمه منفی را وارد کنید</string>
+    <string name="msg_negative_keyword_exists">این کلمه منفی قبلاً اضافه شده</string>
+    <string name="label_no_negative_keywords">هیچ کلمه منفی‌ای اضافه نشده</string>
+
+    <!-- Recent SMS -->
+    <string name="card_recent_sms">پیامک‌های اخیر</string>
+    <string name="label_recent_sms">آخرین پیامک‌های دریافتی</string>
+    <string name="desc_recent_sms">پیامک‌های اخیر دریافتی و وضعیت ارسال آن‌ها</string>
+    <string name="label_no_sms">هنوز پیامکی دریافت نشده</string>
+    <string name="label_sms_forwarded">ارسال شده</string>
+    <string name="label_sms_not_forwarded">ارسال نشده</string>
+    <string name="label_sms_filtered">فیلتر شده</string>
+    <string name="label_sms_time">زمان دریافت</string>
+    <string name="label_sms_sender">فرستنده</string>
+    <string name="label_sms_body">متن پیامک</string>
+    <string name="btn_clear_history">پاک کردن تاریخچه</string>
+    <string name="msg_history_cleared">تاریخچه پاک شد</string>
+
+    <!-- Permission -->
+    <string name="msg_permission_required">برنامه نیاز به دسترسی خواندن پیامک دارد</string>
+    <string name="btn_grant_permission">اعطای دسترسی</string>
+
+    <!-- Errors -->
+    <string name="error_invalid_token">توکن نامعتبر است</string>
+    <string name="error_invalid_chat_id">شناسه چت نامعتبر است</string>
+    <string name="error_network">خطا در اتصال به شبکه</string>
+    <string name="error_generic">خطای غیرمنتظره رخ داد</string>
+
+    <!-- General -->
+    <string name="btn_ok">تأیید</string>
+    <string name="btn_cancel">لغو</string>
+    <string name="btn_yes">بله</string>
+    <string name="btn_no">خیر</string>
+    <string name="dialog_confirm_delete">آیا از حذف این مورد اطمینان دارید؟</string>
+    <string name="loading">در حال بارگذاری…</string>
+</resources>

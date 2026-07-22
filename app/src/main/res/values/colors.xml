@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary banking green palette -->
+    <color name="primary">#1B5E20</color>
+    <color name="primary_dark">#0D3B13</color>
+    <color name="primary_light">#4CAF50</color>
+    <color name="accent">#4CAF50</color>
+    <color name="accent_light">#81C784</color>
+    <color name="accent_dark">#388E3C</color>
+
+    <!-- Surfaces -->
+    <color name="background">#F5F5F5</color>
+    <color name="card">#FFFFFF</color>
+    <color name="card_elevated">#FFFFFF</color>
+    <color name="surface">#FAFAFA</color>
+    <color name="surface_variant">#F0F0F0</color>
+
+    <!-- Text -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_hint">#BDBDBD</color>
+    <color name="text_on_primary">#FFFFFF</color>
+    <color name="text_on_accent">#FFFFFF</color>
+
+    <!-- Status & feedback -->
+    <color name="error">#F44336</color>
+    <color name="error_light">#FFCDD2</color>
+    <color name="success">#4CAF50</color>
+    <color name="success_light">#C8E6C9</color>
+    <color name="warning">#FF9800</color>
+    <color name="warning_light">#FFE0B2</color>
+
+    <!-- Dividers & borders -->
+    <color name="divider">#E0E0E0</color>
+    <color name="border">#BDBDBD</color>
+
+    <!-- Chip backgrounds -->
+    <color name="chip_background">#E8F5E9</color>
+    <color name="chip_text">#1B5E20</color>
+    <color name="chip_negative_background">#FFEBEE</color>
+    <color name="chip_negative_text">#C62828</color>
+
+    <!-- Switch & radio -->
+    <color name="switch_track_off">#BDBDBD</color>
+    <color name="switch_track_on">#A5D6A7</color>
+    <color name="switch_thumb_off">#FAFAFA</color>
+    <color name="switch_thumb_on">#1B5E20</color>
+
+    <!-- Toolbar -->
+    <color name="toolbar_bg">#1B5E20</color>
+    <color name="toolbar_text">#FFFFFF</color>
+
+    <!-- Status bar -->
+    <color name="status_bar">#0D3B13</color>
+
+    <!-- Ripple -->
+    <color name="ripple">#1A4CAF50</color>
+
+    <!-- Night mode overrides -->
+    <color name="background_night">#121212</color>
+    <color name="card_night">#1E1E1E</color>
+    <color name="text_primary_night">#E0E0E0</color>
+    <color name="text_secondary_night">#9E9E9E</color>
+    <color name="divider_night">#333333</color>
+</resources>

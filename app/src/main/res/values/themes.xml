@@ -135,6 +135,9 @@
         <item name="trackTint">@color/switch_track_off</item>
     </style>
 
+    <!-- Base shape (implicit parent for Shape.SmsForwarder.*) -->
+    <style name="Shape.SmsForwarder" />
+
     <!-- Shape appearances -->
     <style name="Shape.SmsForwarder.Small">
         <item name="cornerFamily">rounded</item>

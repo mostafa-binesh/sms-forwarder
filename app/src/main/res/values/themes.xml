@@ -41,8 +41,6 @@
         <item name="android:textColorPrimary">@color/text_primary</item>
         <item name="android:textColorSecondary">@color/text_secondary</item>
         <item name="android:textColorHint">@color/text_hint</item>
-
-        <!-- Shapes -->
     </style>
 
     <!-- Night-mode overrides -->
@@ -130,18 +128,6 @@
     <style name="Widget.SmsForwarder.Switch" parent="Widget.Material3.CompoundButton.Switch">
         <item name="thumbTint">@color/switch_thumb_off</item>
         <item name="trackTint">@color/switch_track_off</item>
-    </style>
-
-
-    <!-- Shape appearances -->
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">8dp</item>
-    </style>
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">16dp</item>
-    </style>
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">28dp</item>
     </style>
 
     <!-- Toolbar theme -->

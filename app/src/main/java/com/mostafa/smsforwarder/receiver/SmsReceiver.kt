@@ -43,8 +43,7 @@ class SmsReceiver : BroadcastReceiver() {
         val groupedMessages = messages.groupBy { it.displayOriginatingAddress ?: it.originatingAddress ?: "Unknown" }
 
         for ((sender, parts) in groupedMessages) {
-            val fullBody = parts.sortedBy { it.messagePart }
-                .joinToString("") { it.messageBody ?: "" }
+            val fullBody = parts.joinToString("") { it.messageBody ?: "" }
 
             processSms(context, sender, fullBody, settings)
         }

@@ -106,4 +106,5 @@
     <string name="btn_no">خیر</string>
     <string name="dialog_confirm_delete">آیا از حذف این مورد اطمینان دارید؟</string>
     <string name="loading">در حال بارگذاری…</string>
+    <string name="notification_channel_name"> forwarded SMS</string>
 </resources>

@@ -36,3 +36,9 @@ release_apk/
 debug_apk/
 signed-release.zip
 *.zip
+
+# Signing keystore (keep secret!)
+*.keystore
+*.jks
+keystore_base64.txt
+keystore_credentials.txt

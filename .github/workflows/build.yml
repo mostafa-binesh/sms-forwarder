@@ -35,25 +35,18 @@ jobs:
           echo "VERSION_TAG=1.0.$VERSION_CODE" >> $GITHUB_ENV
           echo "📦 Version: 1.0.$VERSION_CODE"
 
-      - name: Generate signing keystore
+      - name: Decode signing keystore
         run: |
-          keytool -genkeypair -v \
-            -keystore /tmp/release-key.jks \
-            -alias smsforwarder \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -storepass smsforwarder123 \
-            -keypass smsforwarder123 \
-            -dname "CN=Mostafa Binesh, OU=Dev, O=Personal, L=Tehran, ST=Tehran, C=IR"
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/release-key.jks
+          echo "✅ Keystore decoded"
 
       - name: Build Signed Release APK
         run: ./gradlew assembleRelease
         env:
           RELEASE_STORE_FILE: /tmp/release-key.jks
-          RELEASE_STORE_PASSWORD: smsforwarder123
-          RELEASE_KEY_ALIAS: smsforwarder
-          RELEASE_KEY_PASSWORD: smsforwarder123
+          RELEASE_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Verify APK signature
         run: |

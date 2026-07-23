@@ -28,6 +28,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.SettingsActivity"
+            android:parentActivityName=".ui.MainActivity"
+            android:windowSoftInputMode="adjustResize" />
+
         <receiver
             android:name=".receiver.SmsReceiver"
             android:exported="true"

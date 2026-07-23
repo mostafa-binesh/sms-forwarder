@@ -1,0 +1,536 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layoutDirection="rtl"
+    android:layout_gravity="end"
+    android:background="@color/background"
+    tools:context=".ui.SettingsActivity">
+
+    <!-- ======================== Toolbar ======================== -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/toolbar_bg"
+        app:elevation="0dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/toolbar_bg"
+            app:title="@string/settings_title"
+            app:titleTextColor="@color/toolbar_text"
+            app:navigationIcon="@android:drawable/ic_menu_revert"
+            app:navigationIconTint="@color/toolbar_text"
+            app:popupTheme="@style/Theme.SmsForwarder" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- ======================== Settings Content (Scrollable) ======================== -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:paddingTop="8dp"
+        android:paddingBottom="24dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:gravity="center_horizontal">
+
+            <!-- ==================== Card: Bot Config ==================== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_bot_config"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp"
+                app:cardBackgroundColor="@color/card">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/card_bot_config"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Bot Token input -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_bot_token"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:hint="@string/label_bot_token"
+                        style="@style/Widget.SmsForwarder.TextInputLayout"
+                        app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
+                        app:errorEnabled="true">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_bot_token"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPassword"
+                            android:textDirection="firstStrongLtr"
+                            android:hint="@string/hint_bot_token"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Chat ID input -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_chat_id"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/label_chat_id"
+                        style="@style/Widget.SmsForwarder.TextInputLayout"
+                        app:startIconDrawable="@android:drawable/ic_dialog_map"
+                        app:errorEnabled="true">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_chat_id"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text"
+                            android:textDirection="firstStrongLtr"
+                            android:hint="@string/hint_chat_id"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Buttons row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="12dp"
+                        android:gravity="end">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_test_connection"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/btn_test_connection"
+                            android:textSize="13sp"
+                            style="@style/Widget.SmsForwarder.Button.Outline"
+                            android:layout_marginStart="8dp"
+                            app:icon="@android:drawable/ic_menu_send" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_save_config"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/btn_save_config"
+                            android:textSize="13sp"
+                            style="@style/Widget.SmsForwarder.Button.Primary"
+                            app:icon="@android:drawable/ic_menu_save" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ==================== Card: Filter Mode ==================== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_filter_mode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp"
+                app:cardBackgroundColor="@color/card">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/card_filter_mode"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_filter_mode"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginBottom="12dp" />
+
+                    <RadioGroup
+                        android:id="@+id/rg_filter_mode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <RadioButton
+                            android:id="@+id/rb_filter_all"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/filter_all"
+                            android:textSize="14sp"
+                            android:textColor="@color/text_primary"
+                            android:padding="8dp"
+                            android:checked="true"
+                            android:buttonTint="@color/primary" />
+
+                        <RadioButton
+                            android:id="@+id/rb_filter_keywords"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/filter_keywords"
+                            android:textSize="14sp"
+                            android:textColor="@color/text_primary"
+                            android:padding="8dp"
+                            android:buttonTint="@color/primary" />
+
+                        <RadioButton
+                            android:id="@+id/rb_filter_senders"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/filter_senders"
+                            android:textSize="14sp"
+                            android:textColor="@color/text_primary"
+                            android:padding="8dp"
+                            android:buttonTint="@color/primary" />
+
+                        <RadioButton
+                            android:id="@+id/rb_filter_both"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/filter_keywords_senders"
+                            android:textSize="14sp"
+                            android:textColor="@color/text_primary"
+                            android:padding="8dp"
+                            android:buttonTint="@color/primary" />
+                    </RadioGroup>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ==================== Card: Sender Numbers ==================== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_senders"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp"
+                app:cardBackgroundColor="@color/card">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/card_senders"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/desc_senders"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Add sender row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_add_sender"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:hint="@string/hint_add_sender"
+                            android:inputType="phone"
+                            android:textDirection="firstStrongLtr"
+                            android:textSize="14sp"
+                            android:background="@drawable/bg_sms_item"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:layout_marginStart="8dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_add_sender"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:text="@string/btn_add_sender"
+                            android:textSize="13sp"
+                            style="@style/Widget.SmsForwarder.Button.Primary"
+                            app:icon="@android:drawable/ic_input_add"
+                            app:iconGravity="textStart"
+                            android:layout_marginStart="8dp" />
+                    </LinearLayout>
+
+                    <!-- Empty state -->
+                    <TextView
+                        android:id="@+id/tv_no_senders"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_no_senders"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_hint"
+                        android:textAlignment="center"
+                        android:padding="16dp"
+                        android:visibility="visible" />
+
+                    <!-- Sender chip container -->
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chip_group_senders"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:chipSpacingHorizontal="8dp"
+                        app:chipSpacingVertical="8dp"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ==================== Card: Keywords ==================== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_keywords"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp"
+                app:cardBackgroundColor="@color/card">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/card_keywords"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/desc_keywords"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Add keyword row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_add_keyword"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:hint="@string/hint_add_keyword"
+                            android:inputType="text"
+                            android:textSize="14sp"
+                            android:background="@drawable/bg_sms_item"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:layout_marginStart="8dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_add_keyword"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:text="@string/btn_add_keyword"
+                            android:textSize="13sp"
+                            style="@style/Widget.SmsForwarder.Button.Primary"
+                            app:icon="@android:drawable/ic_input_add"
+                            app:iconGravity="textStart"
+                            android:layout_marginStart="8dp" />
+                    </LinearLayout>
+
+                    <!-- Empty state -->
+                    <TextView
+                        android:id="@+id/tv_no_keywords"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_no_keywords"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_hint"
+                        android:textAlignment="center"
+                        android:padding="16dp"
+                        android:visibility="visible" />
+
+                    <!-- Keyword chip container -->
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chip_group_keywords"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:chipSpacingHorizontal="8dp"
+                        app:chipSpacingVertical="8dp"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ==================== Card: Negative Keywords ==================== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_negative_keywords"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp"
+                app:cardBackgroundColor="@color/card">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/card_negative_keywords"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/desc_negative_keywords"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Add negative keyword row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_add_negative_keyword"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:hint="@string/hint_add_negative_keyword"
+                            android:inputType="text"
+                            android:textSize="14sp"
+                            android:background="@drawable/bg_sms_item"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:layout_marginStart="8dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_add_negative_keyword"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:text="@string/btn_add_negative_keyword"
+                            android:textSize="13sp"
+                            style="@style/Widget.SmsForwarder.Button.Primary"
+                            app:icon="@android:drawable/ic_input_add"
+                            app:iconGravity="textStart"
+                            android:layout_marginStart="8dp" />
+                    </LinearLayout>
+
+                    <!-- Empty state -->
+                    <TextView
+                        android:id="@+id/tv_no_negative_keywords"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_no_negative_keywords"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_hint"
+                        android:textAlignment="center"
+                        android:padding="16dp"
+                        android:visibility="visible" />
+
+                    <!-- Negative keyword chip container -->
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chip_group_negative_keywords"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:chipSpacingHorizontal="8dp"
+                        app:chipSpacingVertical="8dp"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ==================== Clear History Button ==================== -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_clear_history"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/btn_clear_history"
+                android:textSize="14sp"
+                style="@style/Widget.SmsForwarder.Button.Outline"
+                app:icon="@android:drawable/ic_menu_delete"
+                app:iconGravity="textStart"
+                app:strokeColor="@color/error"
+                android:textColor="@color/error" />
+
+            <!-- ==================== App Version ==================== -->
+            <TextView
+                android:id="@+id/tv_app_version"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="24dp"
+                android:textAlignment="center"
+                android:textSize="12sp"
+                android:textColor="@color/text_hint" />
+
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

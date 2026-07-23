@@ -56,6 +56,11 @@
     <!-- Ripple -->
     <color name="ripple">#1A4CAF50</color>
 
+    <!-- Dashboard specific -->
+    <color name="dashboard_header_bg">#1B5E20</color>
+    <color name="status_active">#4CAF50</color>
+    <color name="status_inactive">#F44336</color>
+
     <!-- Night mode overrides -->
     <color name="background_night">#121212</color>
     <color name="card_night">#1E1E1E</color>

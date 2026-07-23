@@ -3,6 +3,29 @@
     <!-- App -->
     <string name="app_name">SmsForwarder</string>
 
+    <!-- Dashboard -->
+    <string name="dashboard_title">SmsForwarder</string>
+    <string name="menu_settings">تنظیمات</string>
+    <string name="status_forwarding_active">ارسال خودکار فعال</string>
+    <string name="status_forwarding_inactive">ارسال غیرفعال</string>
+    <string name="status_bot_configured">بات تنظیم شده</string>
+    <string name="status_bot_not_configured">بات تنظیم نشده</string>
+    <string name="status_sms_granted">دسترسی SMS</string>
+    <string name="status_sms_denied">دسترسی SMS غیرفعال</string>
+    <string name="stats_forwarded">ارسال شده</string>
+    <string name="stats_failed">ناموفق</string>
+    <string name="stats_filtered">فیلتر شده</string>
+    <string name="recent_sms_title">آخرین پیامکها</string>
+    <string name="no_sms_yet">هنوز پیامکی دریافت نشده</string>
+
+    <!-- Permission Dialog -->
+    <string name="permission_dialog_title">دسترسی SMS مورد نیاز است</string>
+    <string name="permission_dialog_message">برنامه برای دریافت و ارسال خودکار پیامک‌های بانکی به تلگرام، نیاز به دسترسی خواندن SMS دارد.</string>
+    <string name="btn_open_settings">تنظیمات سیستم</string>
+
+    <!-- Settings -->
+    <string name="settings_title">تنظیمات</string>
+
     <!-- Toolbar -->
     <string name="toolbar_title">forwarder پیامک</string>
     <string name="toolbar_subtitle">ارسال پیامک به تلگرام</string>

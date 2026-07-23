@@ -3,12 +3,16 @@
 package com.mostafa.smsforwarder.ui
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.view.Gravity
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
-import android.widget.EditText
-import android.widget.RadioGroup
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -16,50 +20,42 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
-import com.google.android.material.switchmaterial.SwitchMaterial
 import com.mostafa.smsforwarder.R
 import com.mostafa.smsforwarder.db.AppDatabase
-import com.mostafa.smsforwarder.filter.FilterMode
-import com.mostafa.smsforwarder.sender.TelegramSender
+import com.mostafa.smsforwarder.db.SmsLog
 import com.mostafa.smsforwarder.util.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@SuppressLint("MissingInflatedId")
 class MainActivity : AppCompatActivity() {
 
     private lateinit var settings: SettingsManager
     private lateinit var db: AppDatabase
 
-    // Views
-    private lateinit var etBotToken: EditText
-    private lateinit var etChatId: EditText
-    private lateinit var switchEnabled: SwitchMaterial
-    private lateinit var rgFilterMode: RadioGroup
-    private lateinit var tvStatus: TextView
-    private lateinit var btnTestConnection: MaterialButton
-    private lateinit var btnSaveConfig: MaterialButton
-    private lateinit var chipGroupSenders: ChipGroup
-    private lateinit var chipGroupKeywords: ChipGroup
-    private lateinit var chipGroupNegative: ChipGroup
-    private lateinit var tvNoSenders: TextView
-    private lateinit var tvNoKeywords: TextView
-    private lateinit var tvNoNegative: TextView
-    private lateinit var etAddSender: EditText
-    private lateinit var btnAddSender: MaterialButton
-    private lateinit var etAddKeyword: EditText
-    private lateinit var btnAddKeyword: MaterialButton
-    private lateinit var etAddNegative: EditText
-    private lateinit var btnAddNegative: MaterialButton
-    private lateinit var tvLogs: TextView
-    private lateinit var btnClearLogs: MaterialButton
+    // Views — Toggle card
+    private lateinit var switchEnabled: com.google.android.material.switchmaterial.SwitchMaterial
+    private lateinit var tvToggleStatus: TextView
+    private lateinit var statusDot: View
+
+    // Views — Status cards
+    private lateinit var tvBotStatusIcon: TextView
+    private lateinit var tvBotStatusText: TextView
+    private lateinit var tvSmsStatusIcon: TextView
+    private lateinit var tvSmsStatusText: TextView
+
+    // Views — Stats
+    private lateinit var tvStatForwarded: TextView
+    private lateinit var tvStatFailed: TextView
+    private lateinit var tvStatFiltered: TextView
+
+    // Views — Recent SMS
+    private lateinit var tvNoSms: TextView
+    private lateinit var llRecentSms: LinearLayout
 
     // Permission launcher
     private val smsPermissionLauncher = registerForActivityResult(
@@ -69,9 +65,19 @@ class MainActivity : AppCompatActivity() {
         if (allGranted) {
             Toast.makeText(this, "✅ دسترسی SMS اعطا شد", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(this, "❌ دسترسی SMS ضروری است", Toast.LENGTH_LONG).show()
+            // Check if permanently denied
+            val permanentlyDenied = !shouldShowRequestPermissionRationale(
+                android.Manifest.permission.RECEIVE_SMS
+            ) && !shouldShowRequestPermissionRationale(
+                android.Manifest.permission.READ_SMS
+            )
+            if (permanentlyDenied) {
+                showPermissionSettingsDialog()
+            } else {
+                Toast.makeText(this, "❌ دسترسی SMS ضروری است", Toast.LENGTH_LONG).show()
+            }
         }
-        updateStatus()
+        updateDashboard()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -82,268 +88,247 @@ class MainActivity : AppCompatActivity() {
         db = AppDatabase.getInstance(this)
 
         initViews()
+        setupToolbar()
         loadSettings()
         setupListeners()
-        observeLogs()
-
-        // Request permissions on first launch
-        requestSmsPermissions()
+        observeRecentSms()
     }
 
-    private fun requestSmsPermissions() {
+    override fun onResume() {
+        super.onResume()
+        checkPermissions()
+        updateDashboard()
+        refreshStats()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.menu_settings -> {
+                val intent = Intent(this, SettingsActivity::class.java)
+                startActivity(intent)
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun initViews() {
+        switchEnabled = findViewById(R.id.switch_enable)
+        tvToggleStatus = findViewById(R.id.tv_toggle_status)
+        statusDot = findViewById(R.id.status_dot)
+        tvBotStatusIcon = findViewById(R.id.tv_bot_status_icon)
+        tvBotStatusText = findViewById(R.id.tv_bot_status_text)
+        tvSmsStatusIcon = findViewById(R.id.tv_sms_status_icon)
+        tvSmsStatusText = findViewById(R.id.tv_sms_status_text)
+        tvStatForwarded = findViewById(R.id.tv_stat_forwarded)
+        tvStatFailed = findViewById(R.id.tv_stat_failed)
+        tvStatFiltered = findViewById(R.id.tv_stat_filtered)
+        tvNoSms = findViewById(R.id.tv_no_sms)
+        llRecentSms = findViewById(R.id.ll_recent_sms)
+    }
+
+    private fun setupToolbar() {
+        val toolbar = findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(true)
+    }
+
+    private fun loadSettings() {
+        switchEnabled.isChecked = settings.isEnabled
+    }
+
+    private fun setupListeners() {
+        switchEnabled.setOnCheckedChangeListener { _, isChecked ->
+            settings.isEnabled = isChecked
+            updateDashboard()
+        }
+    }
+
+    // ── Permission Handling ─────────────────────────────────────────
+
+    private fun hasSmsPermissions(): Boolean {
+        val receiveSms = ContextCompat.checkSelfPermission(
+            this, android.Manifest.permission.RECEIVE_SMS
+        ) == PackageManager.PERMISSION_GRANTED
+        val readSms = ContextCompat.checkSelfPermission(
+            this, android.Manifest.permission.READ_SMS
+        ) == PackageManager.PERMISSION_GRANTED
+        return receiveSms && readSms
+    }
+
+    private fun checkPermissions() {
+        if (hasSmsPermissions()) return
+
         val permissionsNeeded = mutableListOf<String>()
 
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECEIVE_SMS)
-            != PackageManager.PERMISSION_GRANTED) {
+            != PackageManager.PERMISSION_GRANTED
+        ) {
             permissionsNeeded.add(android.Manifest.permission.RECEIVE_SMS)
         }
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_SMS)
-            != PackageManager.PERMISSION_GRANTED) {
+            != PackageManager.PERMISSION_GRANTED
+        ) {
             permissionsNeeded.add(android.Manifest.permission.READ_SMS)
         }
 
         // Android 13+ needs POST_NOTIFICATIONS
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
+                != PackageManager.PERMISSION_GRANTED
+            ) {
                 permissionsNeeded.add(android.Manifest.permission.POST_NOTIFICATIONS)
             }
         }
 
         if (permissionsNeeded.isNotEmpty()) {
-            smsPermissionLauncher.launch(permissionsNeeded.toTypedArray())
-        }
-    }
-
-    private fun initViews() {
-        etBotToken = findViewById(R.id.et_bot_token)
-        etChatId = findViewById(R.id.et_chat_id)
-        switchEnabled = findViewById(R.id.switch_enable)
-        rgFilterMode = findViewById(R.id.rg_filter_mode)
-        btnTestConnection = findViewById(R.id.btn_test_connection)
-        btnSaveConfig = findViewById(R.id.btn_save_config)
-        chipGroupSenders = findViewById(R.id.chip_group_senders)
-        chipGroupKeywords = findViewById(R.id.chip_group_keywords)
-        chipGroupNegative = findViewById(R.id.chip_group_negative_keywords)
-        tvNoSenders = findViewById(R.id.tv_no_senders)
-        tvNoKeywords = findViewById(R.id.tv_no_keywords)
-        tvNoNegative = findViewById(R.id.tv_no_negative_keywords)
-        etAddSender = findViewById(R.id.et_add_sender)
-        btnAddSender = findViewById(R.id.btn_add_sender)
-        etAddKeyword = findViewById(R.id.et_add_keyword)
-        btnAddKeyword = findViewById(R.id.btn_add_keyword)
-        etAddNegative = findViewById(R.id.et_add_negative_keyword)
-        btnAddNegative = findViewById(R.id.btn_add_negative_keyword)
-        tvLogs = findViewById(R.id.tv_logs)
-        btnClearLogs = findViewById(R.id.btn_clear_history)
-        tvStatus = findViewById(R.id.tv_status)
-    }
-
-    private fun loadSettings() {
-        etBotToken.setText(settings.botToken)
-        etChatId.setText(settings.chatId)
-        switchEnabled.isChecked = settings.isEnabled
-
-        when (settings.filterMode) {
-            FilterMode.ALL -> rgFilterMode.check(R.id.rb_filter_all)
-            FilterMode.WHITELIST -> rgFilterMode.check(R.id.rb_filter_senders)
-            FilterMode.AUTO -> rgFilterMode.check(R.id.rb_filter_keywords)
-        }
-
-        refreshChips(chipGroupSenders, tvNoSenders, settings.senderNumbers.toMutableList()) { settings.senderNumbers = it }
-        refreshChips(chipGroupKeywords, tvNoKeywords, settings.keywords.toMutableList()) { settings.keywords = it }
-        refreshChips(chipGroupNegative, tvNoNegative, settings.negativeKeywords.toMutableList()) { settings.negativeKeywords = it }
-        updateStatus()
-    }
-
-    private fun setupListeners() {
-        btnSaveConfig.setOnClickListener { saveSettings() }
-        btnTestConnection.setOnClickListener { testTelegramConnection() }
-
-        switchEnabled.setOnCheckedChangeListener { _, isChecked ->
-            settings.isEnabled = isChecked
-            updateStatus()
-        }
-
-        rgFilterMode.setOnCheckedChangeListener { _, checkedId ->
-            val mode = when (checkedId) {
-                R.id.rb_filter_senders -> FilterMode.WHITELIST
-                R.id.rb_filter_keywords -> FilterMode.AUTO
-                R.id.rb_filter_both -> FilterMode.AUTO
-                else -> FilterMode.ALL
+            // Check if we should show rationale or if permanently denied
+            val shouldShowRationale = permissionsNeeded.any { perm ->
+                shouldShowRequestPermissionRationale(perm)
             }
-            settings.filterMode = mode
-            updateStatus()
-        }
 
-        btnAddSender.setOnClickListener {
-            val text = etAddSender.text.toString().trim()
-            if (text.isNotBlank()) {
-                val list = settings.senderNumbers.toMutableList()
-                if (text !in list) {
-                    list.add(text)
-                    settings.senderNumbers = list
-                    refreshChips(chipGroupSenders, tvNoSenders, list) { settings.senderNumbers = it }
+            if (shouldShowRationale) {
+                showPermissionRationaleDialog(permissionsNeeded)
+            } else {
+                // First time or permanently denied — just request
+                smsPermissionLauncher.launch(permissionsNeeded.toTypedArray())
+            }
+        }
+    }
+
+    private fun showPermissionRationaleDialog(permissions: List<String>) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.permission_dialog_title)
+            .setMessage(R.string.permission_dialog_message)
+            .setPositiveButton(R.string.btn_grant_permission) { _, _ ->
+                smsPermissionLauncher.launch(permissions.toTypedArray())
+            }
+            .setNegativeButton(R.string.btn_cancel, null)
+            .show()
+    }
+
+    private fun showPermissionSettingsDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.permission_dialog_title)
+            .setMessage(R.string.permission_dialog_message)
+            .setPositiveButton(R.string.btn_open_settings) { _, _ ->
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = android.net.Uri.fromParts("package", packageName, null)
                 }
-                etAddSender.text.clear()
+                startActivity(intent)
             }
-        }
-
-        btnAddKeyword.setOnClickListener {
-            val text = etAddKeyword.text.toString().trim()
-            if (text.isNotBlank()) {
-                val list = settings.keywords.toMutableList()
-                if (text !in list) {
-                    list.add(text)
-                    settings.keywords = list
-                    refreshChips(chipGroupKeywords, tvNoKeywords, list) { settings.keywords = it }
-                }
-                etAddKeyword.text.clear()
-            }
-        }
-
-        btnAddNegative.setOnClickListener {
-            val text = etAddNegative.text.toString().trim()
-            if (text.isNotBlank()) {
-                val list = settings.negativeKeywords.toMutableList()
-                if (text !in list) {
-                    list.add(text)
-                    settings.negativeKeywords = list
-                    refreshChips(chipGroupNegative, tvNoNegative, list) { settings.negativeKeywords = it }
-                }
-                etAddNegative.text.clear()
-            }
-        }
-
-        btnClearLogs.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setTitle("پاک کردن لاگ‌ها")
-                .setMessage("آیا مطمئنید می‌خواهید تمام لاگ‌ها را پاک کنید؟")
-                .setPositiveButton("پاک کردن") { _, _ ->
-                    lifecycleScope.launch {
-                        db.smsLogDao().deleteAll()
-                        Toast.makeText(this@MainActivity, "لاگ‌ها پاک شد", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                .setNegativeButton("لغو", null)
-                .show()
-        }
+            .setNegativeButton(R.string.btn_cancel, null)
+            .show()
     }
 
-    private fun saveSettings() {
-        settings.botToken = etBotToken.text.toString().trim()
-        settings.chatId = etChatId.text.toString().trim()
+    // ── Dashboard Updates ───────────────────────────────────────────
 
-        val selectedMode = when (rgFilterMode.checkedRadioButtonId) {
-            R.id.rb_filter_senders -> FilterMode.WHITELIST
-            R.id.rb_filter_keywords -> FilterMode.AUTO
-            R.id.rb_filter_both -> FilterMode.AUTO
-            else -> FilterMode.ALL
-        }
-        settings.filterMode = selectedMode
-
-        updateStatus()
-        Toast.makeText(this, "ذخیره شد ✅", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun testTelegramConnection() {
-        val token = etBotToken.text.toString().trim()
-        if (token.isBlank()) {
-            Toast.makeText(this, "ابتدا توکن بات را وارد کنید", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        btnTestConnection.isEnabled = false
-        btnTestConnection.text = "در حال تست..."
-
-        lifecycleScope.launch {
-            val result = TelegramSender.testBotConnection(token)
-            btnTestConnection.isEnabled = true
-            btnTestConnection.text = getString(R.string.btn_test_connection)
-
-            result.onSuccess { botInfo ->
-                Toast.makeText(this@MainActivity, "✅ متصل شد: $botInfo", Toast.LENGTH_LONG).show()
-            }.onFailure { error ->
-                Toast.makeText(this@MainActivity, "❌ خطا: ${error.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    private fun updateStatus() {
-        val isConfigured = settings.isTelegramConfigured()
+    private fun updateDashboard() {
         val isEnabled = settings.isEnabled
+        val isConfigured = settings.isTelegramConfigured()
+        val hasSms = hasSmsPermissions()
 
-        // Check SMS permissions
-        val hasSmsPermission = ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED
-
-        val statusText = buildString {
-            append("ارسال: ${if (isEnabled) "فعال ✅" else "غیرفعال ❌"}")
-            append("\nبات: ${if (isConfigured) "تنظیم شده ✅" else "تنظیم نشده ❌"}")
-            append("\nدسترسی SMS: ${if (hasSmsPermission) "فعال ✅" else "غیرفعال ❌ ⚠️"}")
-            append("\nحالت فیلتر: ${settings.filterMode.name}")
-            append("\nفرستنده‌ها: ${settings.senderNumbers.size}")
-            append("\nکلمات کلیدی: ${settings.keywords.size}")
-            append("\nکلمات حذفی: ${settings.negativeKeywords.size}")
+        // Toggle status
+        if (isEnabled) {
+            tvToggleStatus.text = getString(R.string.status_forwarding_active)
+            tvToggleStatus.setTextColor(ContextCompat.getColor(this, R.color.success))
+            statusDot.setBackgroundResource(R.drawable.bg_status_dot_active)
+        } else {
+            tvToggleStatus.text = getString(R.string.status_forwarding_inactive)
+            tvToggleStatus.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
+            statusDot.setBackgroundResource(R.drawable.bg_status_dot)
         }
 
-        tvStatus.text = statusText
-    }
-
-    private fun refreshChips(chipGroup: ChipGroup, emptyText: TextView, items: MutableList<String>, onSave: (List<String>) -> Unit) {
-        chipGroup.removeAllViews()
-        if (items.isEmpty()) {
-            emptyText.visibility = View.VISIBLE
-            chipGroup.visibility = View.GONE
-            return
+        // Bot status
+        if (isConfigured) {
+            tvBotStatusIcon.text = "✅"
+            tvBotStatusText.text = getString(R.string.status_bot_configured)
+            tvBotStatusText.setTextColor(ContextCompat.getColor(this, R.color.success))
+        } else {
+            tvBotStatusIcon.text = "❌"
+            tvBotStatusText.text = getString(R.string.status_bot_not_configured)
+            tvBotStatusText.setTextColor(ContextCompat.getColor(this, R.color.error))
         }
 
-        emptyText.visibility = View.GONE
-        chipGroup.visibility = View.VISIBLE
-
-        for (item in items) {
-            val chip = Chip(this).apply {
-                text = item
-                isCloseIconVisible = true
-                setOnCloseIconClickListener {
-                    items.remove(item)
-                    onSave(items)
-                    refreshChips(chipGroup, emptyText, items, onSave)
-                }
-            }
-            chipGroup.addView(chip)
+        // SMS permission status
+        if (hasSms) {
+            tvSmsStatusIcon.text = "✅"
+            tvSmsStatusText.text = getString(R.string.status_sms_granted)
+            tvSmsStatusText.setTextColor(ContextCompat.getColor(this, R.color.success))
+        } else {
+            tvSmsStatusIcon.text = "❌"
+            tvSmsStatusText.text = getString(R.string.status_sms_denied)
+            tvSmsStatusText.setTextColor(ContextCompat.getColor(this, R.color.error))
         }
     }
 
-    private fun observeLogs() {
+    private fun refreshStats() {
         val dao = db.smsLogDao()
         lifecycleScope.launch {
-            dao.getRecent(20).collectLatest { logs ->
+            val successCount = withContext(Dispatchers.IO) { dao.getSuccessCount() }
+            val failedCount = withContext(Dispatchers.IO) { dao.getFailedCount() }
+            val filteredCount = withContext(Dispatchers.IO) { dao.getFilteredCount() }
+
+            tvStatForwarded.text = successCount.toString()
+            tvStatFailed.text = failedCount.toString()
+            tvStatFiltered.text = filteredCount.toString()
+        }
+    }
+
+    private fun observeRecentSms() {
+        val dao = db.smsLogDao()
+        lifecycleScope.launch {
+            dao.getRecent(4).collectLatest { logs ->
                 if (logs.isEmpty()) {
-                    tvLogs.text = "هنوز لاگی ثبت نشده."
+                    tvNoSms.visibility = View.VISIBLE
+                    llRecentSms.visibility = View.GONE
                     return@collectLatest
                 }
 
-                val dateFormat = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault())
-                val sb = StringBuilder()
+                tvNoSms.visibility = View.GONE
+                llRecentSms.visibility = View.VISIBLE
+                llRecentSms.removeAllViews()
+
+                val dateFormat = SimpleDateFormat("MM/dd HH:mm", Locale.getDefault())
 
                 for (log in logs) {
                     val date = dateFormat.format(Date(log.timestamp))
-                    val status = when (log.forwardStatus) {
+                    val statusEmoji = when (log.forwardStatus) {
                         "SUCCESS" -> "✅"
                         "FAILED" -> "❌"
                         "FILTERED" -> "🔇"
                         else -> "❓"
                     }
 
-                    sb.appendLine("$status [$date] ${log.sender}")
-                    sb.appendLine("   ${log.messageBody.take(80)}${if (log.messageBody.length > 80) "..." else ""}")
-                    if (log.errorMessage != null) {
-                        sb.appendLine("   ⚠️ ${log.errorMessage}")
+                    val row = LinearLayout(this@MainActivity).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER_VERTICAL
+                        setPadding(0, 6, 0, 6)
                     }
-                    sb.appendLine()
-                }
 
-                tvLogs.text = sb.toString()
+                    val tvStatus = TextView(this@MainActivity).apply {
+                        text = statusEmoji
+                        textSize = 14f
+                    }
+
+                    val tvInfo = TextView(this@MainActivity).apply {
+                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                        text = "$date | ${log.sender}"
+                        textSize = 12f
+                        setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
+                        setPadding(8, 0, 0, 0)
+                        maxLines = 1
+                    }
+
+                    row.addView(tvStatus)
+                    row.addView(tvInfo)
+                    llRecentSms.addView(row)
+                }
             }
         }
     }

@@ -3,14 +3,18 @@
 package com.mostafa.smsforwarder.ui
 
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
@@ -57,6 +61,19 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvLogs: TextView
     private lateinit var btnClearLogs: MaterialButton
 
+    // Permission launcher
+    private val smsPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.values.all { it }
+        if (allGranted) {
+            Toast.makeText(this, "✅ دسترسی SMS اعطا شد", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "❌ دسترسی SMS ضروری است", Toast.LENGTH_LONG).show()
+        }
+        updateStatus()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -68,6 +85,34 @@ class MainActivity : AppCompatActivity() {
         loadSettings()
         setupListeners()
         observeLogs()
+
+        // Request permissions on first launch
+        requestSmsPermissions()
+    }
+
+    private fun requestSmsPermissions() {
+        val permissionsNeeded = mutableListOf<String>()
+
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECEIVE_SMS)
+            != PackageManager.PERMISSION_GRANTED) {
+            permissionsNeeded.add(android.Manifest.permission.RECEIVE_SMS)
+        }
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_SMS)
+            != PackageManager.PERMISSION_GRANTED) {
+            permissionsNeeded.add(android.Manifest.permission.READ_SMS)
+        }
+
+        // Android 13+ needs POST_NOTIFICATIONS
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        if (permissionsNeeded.isNotEmpty()) {
+            smsPermissionLauncher.launch(permissionsNeeded.toTypedArray())
+        }
     }
 
     private fun initViews() {
@@ -228,9 +273,13 @@ class MainActivity : AppCompatActivity() {
         val isConfigured = settings.isTelegramConfigured()
         val isEnabled = settings.isEnabled
 
+        // Check SMS permissions
+        val hasSmsPermission = ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED
+
         val statusText = buildString {
             append("ارسال: ${if (isEnabled) "فعال ✅" else "غیرفعال ❌"}")
             append("\nبات: ${if (isConfigured) "تنظیم شده ✅" else "تنظیم نشده ❌"}")
+            append("\nدسترسی SMS: ${if (hasSmsPermission) "فعال ✅" else "غیرفعال ❌ ⚠️"}")
             append("\nحالت فیلتر: ${settings.filterMode.name}")
             append("\nفرستنده‌ها: ${settings.senderNumbers.size}")
             append("\nکلمات کلیدی: ${settings.keywords.size}")

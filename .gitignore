@@ -31,3 +31,6 @@ Thumbs.db
 # Secrets (NEVER commit these!)
 *.env
 google-services.json
+SmsForwarder-*.zip
+release_apk/
+debug_apk/

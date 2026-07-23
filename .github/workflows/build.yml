@@ -1,11 +1,11 @@
-name: Build APK
+name: Build & Sign APK
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
 
 jobs:
   build:
@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -25,22 +27,81 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Auto-increment version
+        run: |
+          VERSION_CODE=$(git rev-list --count HEAD)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          sed -i "s/versionCode [0-9]*/versionCode $VERSION_CODE/" app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"1.0.$VERSION_CODE\"/" app/build.gradle
+          echo "VERSION_TAG=1.0.$VERSION_CODE" >> $GITHUB_ENV
+          echo "📦 Version: 1.0.$VERSION_CODE (build $VERSION_CODE)"
+
+      - name: Generate signing keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore release-key.jks \
+            -alias smsforwarder \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass smsforwarder123 \
+            -keypass smsforwarder123 \
+            -dname "CN=Mostafa Binesh, OU=Dev, O=Personal, L=Tehran, ST=Tehran, C=IR"
+
+      - name: Build Signed Release APK
+        run: ./gradlew assembleRelease
+        env:
+          RELEASE_STORE_FILE: release-key.jks
+          RELEASE_STORE_PASSWORD: smsforwarder123
+          RELEASE_KEY_ALIAS: smsforwarder
+          RELEASE_KEY_PASSWORD: smsforwarder123
+
       - name: Build Debug APK
         run: ./gradlew assembleDebug
 
-      - name: Build Release APK (unsigned)
-        run: ./gradlew assembleRelease
+      - name: Sign Release APK with apksigner
+        run: |
+          # Find build-tools
+          BUILD_TOOLS=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)
+          echo "Using build-tools: $BUILD_TOOLS"
+          
+          # Re-sign with apksigner for proper V2 signing
+          ${BUILD_TOOLS}apksigner sign \
+            --ks release-key.jks \
+            --ks-pass pass:smsforwarder123 \
+            --ks-key-alias smsforwarder \
+            --key-pass pass:smsforwarder123 \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            app/build/outputs/apk/release/app-release.apk || echo "apksigner not available, using gradle-signed APK"
+          
+          # Verify
+          ${BUILD_TOOLS}apksigner verify --verbose app/build/outputs/apk/release/app-release.apk 2>&1 || true
+
+      - name: Upload Signed Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SmsForwarder-signed-${{ env.VERSION_TAG }}
+          path: app/build/outputs/apk/release/app-release.apk
+          retention-days: 90
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: SmsForwarder-debug
+          name: SmsForwarder-debug-${{ env.VERSION_TAG }}
           path: app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
+          retention-days: 90
 
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
         with:
-          name: SmsForwarder-release
-          path: app/build/outputs/apk/release/app-release-unsigned.apk
-          retention-days: 30
+          tag_name: v${{ env.VERSION_TAG }}
+          name: "v${{ env.VERSION_TAG }}"
+          files: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/apk/debug/app-debug.apk
+          generate_release_notes: true
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

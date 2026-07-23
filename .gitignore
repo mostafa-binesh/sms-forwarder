@@ -34,3 +34,5 @@ google-services.json
 SmsForwarder-*.zip
 release_apk/
 debug_apk/
+signed-release.zip
+*.zip

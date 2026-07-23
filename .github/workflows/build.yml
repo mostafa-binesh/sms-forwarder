@@ -30,11 +30,10 @@ jobs:
       - name: Auto-increment version
         run: |
           VERSION_CODE=$(git rev-list --count HEAD)
-          SHORT_SHA=$(git rev-parse --short HEAD)
           sed -i "s/versionCode [0-9]*/versionCode $VERSION_CODE/" app/build.gradle
           sed -i "s/versionName \"[^\"]*\"/versionName \"1.0.$VERSION_CODE\"/" app/build.gradle
           echo "VERSION_TAG=1.0.$VERSION_CODE" >> $GITHUB_ENV
-          echo "📦 Version: 1.0.$VERSION_CODE (build $VERSION_CODE)"
+          echo "📦 Version: 1.0.$VERSION_CODE"
 
       - name: Generate signing keystore
         run: |
@@ -48,21 +47,18 @@ jobs:
             -keypass smsforwarder123 \
             -dname "CN=Mostafa Binesh, OU=Dev, O=Personal, L=Tehran, ST=Tehran, C=IR"
 
-      - name: Build Signed Release APK
+      - name: Build Release APK (unsigned by gradle)
         run: ./gradlew assembleRelease
-        env:
-          RELEASE_STORE_FILE: release-key.jks
-          RELEASE_STORE_PASSWORD: smsforwarder123
-          RELEASE_KEY_ALIAS: smsforwarder
-          RELEASE_KEY_PASSWORD: smsforwarder123
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
-
-      - name: Sign Release APK with apksigner
+      - name: Sign APK with v1+v2+v3
         run: |
           BUILD_TOOLS=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)
-          echo "Using build-tools: $BUILD_TOOLS"
+          echo "Build tools: $BUILD_TOOLS"
+          
+          # Remove existing signature if any
+          rm -rf app/build/outputs/apk/release/app-release.apk.sig
+          
+          # Sign with all schemes
           ${BUILD_TOOLS}apksigner sign \
             --ks app/release-key.jks \
             --ks-pass pass:smsforwarder123 \
@@ -70,8 +66,16 @@ jobs:
             --key-pass pass:smsforwarder123 \
             --v1-signing-enabled true \
             --v2-signing-enabled true \
-            app/build/outputs/apk/release/app-release.apk || true
-          ${BUILD_TOOLS}apksigner verify --verbose app/build/outputs/apk/release/app-release.apk 2>&1 || true
+            --v3-signing-enabled true \
+            --v1-signing-enabled true \
+            app/build/outputs/apk/release/app-release.apk
+          
+          # Verify
+          echo "=== Verification ==="
+          ${BUILD_TOOLS}apksigner verify --verbose app/build/outputs/apk/release/app-release.apk
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
 
       - name: Upload Signed Release APK
         uses: actions/upload-artifact@v4
@@ -86,17 +90,3 @@ jobs:
           name: SmsForwarder-debug-${{ env.VERSION_TAG }}
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 90
-
-      - name: Create GitHub Release
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ env.VERSION_TAG }}
-          name: "v${{ env.VERSION_TAG }}"
-          files: |
-            app/build/outputs/apk/release/app-release.apk
-            app/build/outputs/apk/debug/app-debug.apk
-          generate_release_notes: true
-          draft: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

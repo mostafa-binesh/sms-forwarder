@@ -18,16 +18,15 @@ android {
 
     signingConfigs {
         release {
-            def keystorePath = project.findProperty('RELEASE_STORE_FILE') ?: System.getenv('RELEASE_STORE_FILE')
-            def storePassword = project.findProperty('RELEASE_STORE_PASSWORD') ?: System.getenv('RELEASE_STORE_PASSWORD')
-            def keyAlias = project.findProperty('RELEASE_KEY_ALIAS') ?: System.getenv('RELEASE_KEY_ALIAS')
-            def keyPassword = project.findProperty('RELEASE_KEY_PASSWORD') ?: System.getenv('RELEASE_KEY_PASSWORD')
-
-            if (keystorePath && storePassword) {
-                storeFile file(keystorePath)
-                storePassword storePassword
-                keyAlias keyAlias ?: 'smsforwarder'
-                keyPassword keyPassword ?: storePassword
+            def ksFile = System.getenv('RELEASE_STORE_FILE')
+            def ksPass = System.getenv('RELEASE_STORE_PASSWORD')
+            def kAlias = System.getenv('RELEASE_KEY_ALIAS')
+            def kPass = System.getenv('RELEASE_KEY_PASSWORD')
+            if (ksFile != null && ksPass != null) {
+                storeFile file(ksFile)
+                storePassword ksPass
+                keyAlias kAlias != null ? kAlias : 'smsforwarder'
+                keyPassword kPass != null ? kPass : ksPass
             }
         }
     }
@@ -36,9 +35,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            if (project.findProperty('RELEASE_STORE_FILE') || System.getenv('RELEASE_STORE_FILE')) {
-                signingConfig signingConfigs.release
-            }
+            signingConfig signingConfigs.release
         }
     }
 
@@ -57,30 +54,15 @@ android {
 }
 
 dependencies {
-    // OkHttp3
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
-
-    // Room
     implementation 'androidx.room:room-runtime:2.6.1'
     implementation 'androidx.room:room-ktx:2.6.1'
     kapt 'androidx.room:room-compiler:2.6.1'
-
-    // Material Design 3
     implementation 'com.google.android.material:material:1.11.0'
-
-    // AndroidX AppCompat
     implementation 'androidx.appcompat:appcompat:1.6.1'
-
-    // RecyclerView
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
-
-    // Lifecycle
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
-
-    // Coroutines Android
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
-
-    // Core KTX
     implementation 'androidx.core:core-ktx:1.12.0'
 }

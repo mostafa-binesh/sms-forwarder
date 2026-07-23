@@ -230,7 +230,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateDashboard() {
         val isEnabled = settings.isEnabled
-        val isConfigured = settings.isTelegramConfigured()
+        val isConfigured = settings.isWebhookConfigured()
         val hasSms = hasSmsPermissions()
 
         // Toggle status

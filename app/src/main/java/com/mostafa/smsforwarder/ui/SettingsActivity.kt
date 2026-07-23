@@ -3,7 +3,6 @@
 package com.mostafa.smsforwarder.ui
 
 import android.annotation.SuppressLint
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
@@ -19,7 +18,7 @@ import com.google.android.material.chip.ChipGroup
 import com.mostafa.smsforwarder.R
 import com.mostafa.smsforwarder.db.AppDatabase
 import com.mostafa.smsforwarder.filter.FilterMode
-import com.mostafa.smsforwarder.sender.TelegramSender
+import com.mostafa.smsforwarder.sender.WebhookSender
 import com.mostafa.smsforwarder.util.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,9 +30,9 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var settings: SettingsManager
     private lateinit var db: AppDatabase
 
-    // Views — Bot Config
-    private lateinit var etBotToken: EditText
-    private lateinit var etChatId: EditText
+    // Views — Webhook Config
+    private lateinit var etWebhookUrl: EditText
+    private lateinit var etWebhookApiKey: EditText
     private lateinit var btnTestConnection: MaterialButton
     private lateinit var btnSaveConfig: MaterialButton
 
@@ -76,8 +75,8 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
-        etBotToken = findViewById(R.id.et_bot_token)
-        etChatId = findViewById(R.id.et_chat_id)
+        etWebhookUrl = findViewById(R.id.et_webhook_url)
+        etWebhookApiKey = findViewById(R.id.et_webhook_api_key)
         btnTestConnection = findViewById(R.id.btn_test_connection)
         btnSaveConfig = findViewById(R.id.btn_save_config)
 
@@ -123,8 +122,8 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun loadSettings() {
-        etBotToken.setText(settings.botToken)
-        etChatId.setText(settings.chatId)
+        etWebhookUrl.setText(settings.webhookUrl)
+        etWebhookApiKey.setText(settings.webhookApiKey)
 
         when (settings.filterMode) {
             FilterMode.ALL -> rgFilterMode.check(R.id.rb_filter_all)
@@ -139,7 +138,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         btnSaveConfig.setOnClickListener { saveSettings() }
-        btnTestConnection.setOnClickListener { testTelegramConnection() }
+        btnTestConnection.setOnClickListener { testWebhookConnection() }
 
         rgFilterMode.setOnCheckedChangeListener { _, checkedId ->
             val mode = when (checkedId) {
@@ -220,8 +219,8 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun saveSettings() {
-        settings.botToken = etBotToken.text.toString().trim()
-        settings.chatId = etChatId.text.toString().trim()
+        settings.webhookUrl = etWebhookUrl.text.toString().trim()
+        settings.webhookApiKey = etWebhookApiKey.text.toString().trim()
 
         val selectedMode = when (rgFilterMode.checkedRadioButtonId) {
             R.id.rb_filter_senders -> FilterMode.WHITELIST
@@ -234,9 +233,11 @@ class SettingsActivity : AppCompatActivity() {
         Toast.makeText(this, R.string.msg_config_saved, Toast.LENGTH_SHORT).show()
     }
 
-    private fun testTelegramConnection() {
-        val token = etBotToken.text.toString().trim()
-        if (token.isBlank()) {
+    private fun testWebhookConnection() {
+        val url = etWebhookUrl.text.toString().trim()
+        val apiKey = etWebhookApiKey.text.toString().trim()
+
+        if (url.isBlank() || apiKey.isBlank()) {
             Toast.makeText(this, R.string.msg_fill_all_fields, Toast.LENGTH_SHORT).show()
             return
         }
@@ -245,12 +246,12 @@ class SettingsActivity : AppCompatActivity() {
         btnTestConnection.text = getString(R.string.loading)
 
         lifecycleScope.launch {
-            val result = TelegramSender.testBotConnection(token)
+            val result = WebhookSender.testConnection(url, apiKey)
             btnTestConnection.isEnabled = true
             btnTestConnection.text = getString(R.string.btn_test_connection)
 
-            result.onSuccess { botInfo ->
-                Toast.makeText(this@SettingsActivity, "✅ $botInfo", Toast.LENGTH_LONG).show()
+            result.onSuccess { status ->
+                Toast.makeText(this@SettingsActivity, "✅ $status", Toast.LENGTH_LONG).show()
             }.onFailure { error ->
                 Toast.makeText(this@SettingsActivity, "❌ ${error.message}", Toast.LENGTH_LONG).show()
             }

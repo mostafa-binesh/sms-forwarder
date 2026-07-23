@@ -6,16 +6,16 @@ import com.mostafa.smsforwarder.filter.FilterMode
 
 /**
  * SharedPreferences wrapper for all app settings.
- * Provides typed accessors for Telegram config, filter settings, and keywords.
+ * Provides typed accessors for webhook config, filter settings, and keywords.
  */
 class SettingsManager(context: Context) {
 
     companion object {
         private const val PREFS_NAME = "sms_forwarder_prefs"
 
-        // Telegram settings
-        private const val KEY_BOT_TOKEN = "bot_token"
-        private const val KEY_CHAT_ID = "chat_id"
+        // Webhook settings
+        private const val KEY_WEBHOOK_URL = "webhook_url"
+        private const val KEY_WEBHOOK_API_KEY = "webhook_api_key"
 
         // General settings
         private const val KEY_IS_ENABLED = "is_enabled"
@@ -32,15 +32,15 @@ class SettingsManager(context: Context) {
 
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    // ── Telegram Settings ──────────────────────────────────────────────
+    // ── Webhook Settings ──────────────────────────────────────────────
 
-    var botToken: String
-        get() = prefs.getString(KEY_BOT_TOKEN, "") ?: ""
-        set(value) = prefs.edit().putString(KEY_BOT_TOKEN, value.trim()).apply()
+    var webhookUrl: String
+        get() = prefs.getString(KEY_WEBHOOK_URL, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_WEBHOOK_URL, value.trim()).apply()
 
-    var chatId: String
-        get() = prefs.getString(KEY_CHAT_ID, "") ?: ""
-        set(value) = prefs.edit().putString(KEY_CHAT_ID, value.trim()).apply()
+    var webhookApiKey: String
+        get() = prefs.getString(KEY_WEBHOOK_API_KEY, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_WEBHOOK_API_KEY, value.trim()).apply()
 
     // ── General Settings ───────────────────────────────────────────────
 
@@ -76,10 +76,10 @@ class SettingsManager(context: Context) {
     // ── Helper Methods ─────────────────────────────────────────────────
 
     /**
-     * Check if the bot token and chat ID are configured.
+     * Check if webhook is configured.
      */
-    fun isTelegramConfigured(): Boolean {
-        return botToken.isNotBlank() && chatId.isNotBlank()
+    fun isWebhookConfigured(): Boolean {
+        return webhookUrl.isNotBlank() && webhookApiKey.isNotBlank()
     }
 
     /**

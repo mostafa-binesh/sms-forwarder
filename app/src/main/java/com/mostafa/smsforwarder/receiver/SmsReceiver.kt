@@ -8,7 +8,7 @@ import android.util.Log
 import com.mostafa.smsforwarder.db.AppDatabase
 import com.mostafa.smsforwarder.db.SmsLog
 import com.mostafa.smsforwarder.filter.BankFilter
-import com.mostafa.smsforwarder.sender.TelegramSender
+import com.mostafa.smsforwarder.sender.WebhookSender
 import com.mostafa.smsforwarder.util.SettingsManager
 import com.mostafa.smsforwarder.util.SmsParser
 import kotlinx.coroutines.CoroutineScope
@@ -60,12 +60,28 @@ class SmsReceiver : BroadcastReceiver() {
 
         scope.launch {
             if (shouldForward) {
-                val parsed = SmsParser.parse(body)
-                val formattedMessage = buildForwardMessage(sender, body, parsed)
-                val result = TelegramSender.sendMessage(
-                    botToken = settings.botToken,
-                    chatId = settings.chatId,
-                    message = formattedMessage
+                // Send to webhook server
+                val webhookUrl = settings.webhookUrl
+                val apiKey = settings.webhookApiKey
+
+                if (webhookUrl.isBlank() || apiKey.isBlank()) {
+                    Log.e(TAG, "Webhook not configured!")
+                    val smsLog = SmsLog(
+                        timestamp = System.currentTimeMillis(),
+                        sender = sender,
+                        messageBody = body,
+                        forwardStatus = "FAILED",
+                        errorMessage = "Webhook not configured"
+                    )
+                    dao.insert(smsLog)
+                    return@launch
+                }
+
+                val result = WebhookSender.send(
+                    webhookUrl = webhookUrl,
+                    apiKey = apiKey,
+                    sender = sender,
+                    message = body
                 )
 
                 val smsLog = SmsLog(
@@ -78,7 +94,7 @@ class SmsReceiver : BroadcastReceiver() {
                 dao.insert(smsLog)
 
                 if (result.isSuccess) {
-                    Log.d(TAG, "Successfully forwarded SMS from $sender to Telegram")
+                    Log.d(TAG, "Successfully forwarded SMS from $sender to webhook")
                 } else {
                     Log.e(TAG, "Failed to forward SMS from $sender: ${result.exceptionOrNull()?.message}")
                 }
@@ -95,28 +111,5 @@ class SmsReceiver : BroadcastReceiver() {
                 Log.d(TAG, "SMS from $sender was filtered out")
             }
         }
-    }
-
-    private fun buildForwardMessage(sender: String, body: String, parsed: SmsParser.ParsedSms): String {
-        val sb = StringBuilder()
-        sb.appendLine("📱 *New SMS*")
-        sb.appendLine("From: `$sender`")
-        sb.appendLine("Message: $body")
-
-        if (parsed.cardNumber.isNotBlank()) {
-            sb.appendLine("💳 Card: `****${parsed.cardNumber}`")
-        }
-        if (parsed.amount != null) {
-            val sign = if (parsed.amount >= 0) "+" else ""
-            sb.appendLine("💰 Amount: $sign${parsed.amount}")
-        }
-        if (parsed.date.isNotBlank()) {
-            sb.appendLine("📅 Date: ${parsed.date}")
-        }
-        if (parsed.balanceAfter != null) {
-            sb.appendLine("🏦 Balance: ${parsed.balanceAfter}")
-        }
-
-        return sb.toString()
     }
 }

@@ -39,7 +39,7 @@ jobs:
       - name: Generate signing keystore
         run: |
           keytool -genkeypair -v \
-            -keystore release-key.jks \
+            -keystore app/release-key.jks \
             -alias smsforwarder \
             -keyalg RSA \
             -keysize 2048 \
@@ -61,21 +61,16 @@ jobs:
 
       - name: Sign Release APK with apksigner
         run: |
-          # Find build-tools
           BUILD_TOOLS=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)
           echo "Using build-tools: $BUILD_TOOLS"
-          
-          # Re-sign with apksigner for proper V2 signing
           ${BUILD_TOOLS}apksigner sign \
-            --ks release-key.jks \
+            --ks app/release-key.jks \
             --ks-pass pass:smsforwarder123 \
             --ks-key-alias smsforwarder \
             --key-pass pass:smsforwarder123 \
             --v1-signing-enabled true \
             --v2-signing-enabled true \
-            app/build/outputs/apk/release/app-release.apk || echo "apksigner not available, using gradle-signed APK"
-          
-          # Verify
+            app/build/outputs/apk/release/app-release.apk || true
           ${BUILD_TOOLS}apksigner verify --verbose app/build/outputs/apk/release/app-release.apk 2>&1 || true
 
       - name: Upload Signed Release APK

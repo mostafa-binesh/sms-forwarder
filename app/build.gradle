@@ -22,12 +22,10 @@ android {
             def ksPass = System.getenv('RELEASE_STORE_PASSWORD')
             def kAlias = System.getenv('RELEASE_KEY_ALIAS')
             def kPass = System.getenv('RELEASE_KEY_PASSWORD')
-            if (ksFile != null && ksPass != null) {
-                storeFile file(ksFile)
-                storePassword ksPass
-                keyAlias kAlias != null ? kAlias : 'smsforwarder'
-                keyPassword kPass != null ? kPass : ksPass
-            }
+            storeFile ksFile ? file(ksFile) : null
+            storePassword ksPass ?: ''
+            keyAlias kAlias ?: 'smsforwarder'
+            keyPassword kPass ?: ''
         }
     }
 
@@ -35,7 +33,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.release.storeFile != null ? signingConfigs.release : null
         }
     }
 

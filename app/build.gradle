@@ -26,6 +26,8 @@ android {
             storePassword ksPass ?: ''
             keyAlias kAlias ?: 'smsforwarder'
             keyPassword kPass ?: ''
+            v1SigningEnabled true
+            v2SigningEnabled true
         }
     }
 

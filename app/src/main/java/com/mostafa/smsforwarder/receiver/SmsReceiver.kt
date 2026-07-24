@@ -17,7 +17,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 class SmsReceiver : BroadcastReceiver() {
-
     companion object {
         private const val TAG = "SmsReceiver"
     }
@@ -44,7 +43,6 @@ class SmsReceiver : BroadcastReceiver() {
 
         for ((sender, parts) in groupedMessages) {
             val fullBody = parts.joinToString("") { it.messageBody ?: "" }
-
             processSms(context, sender, fullBody, settings)
         }
     }
@@ -60,7 +58,7 @@ class SmsReceiver : BroadcastReceiver() {
 
         scope.launch {
             if (shouldForward) {
-                // Send to webhook server
+                // Send to webhook server with retry logic
                 val webhookUrl = settings.webhookUrl
                 val apiKey = settings.webhookApiKey
 
@@ -77,27 +75,23 @@ class SmsReceiver : BroadcastReceiver() {
                     return@launch
                 }
 
-                val result = WebhookSender.send(
-                    webhookUrl = webhookUrl,
-                    apiKey = apiKey,
-                    sender = sender,
-                    message = body
-                )
-
+                // Save to queue with PENDING status first
                 val smsLog = SmsLog(
                     timestamp = System.currentTimeMillis(),
                     sender = sender,
                     messageBody = body,
-                    forwardStatus = if (result.isSuccess) "SUCCESS" else "FAILED",
-                    errorMessage = result.exceptionOrNull()?.message
+                    forwardStatus = "PENDING",
+                    retryCount = 0,
+                    maxRetries = settings.maxRetries,
+                    nextRetryAt = System.currentTimeMillis(),
+                    lastAttemptAt = 0
                 )
-                dao.insert(smsLog)
+                val id = dao.insert(smsLog)
+                Log.d(TAG, "SMS saved to queue with ID: $id, starting retry worker")
 
-                if (result.isSuccess) {
-                    Log.d(TAG, "Successfully forwarded SMS from $sender to webhook")
-                } else {
-                    Log.e(TAG, "Failed to forward SMS from $sender: ${result.exceptionOrNull()?.message}")
-                }
+                // Start the retry worker
+                WebhookSender.startRetryWorker(context)
+
             } else {
                 // Log but don't forward
                 val smsLog = SmsLog(

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow cleartext HTTP to our server IP -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">191.101.113.64</domain>
+        <domain includeSubdomains="true">hermes.artapanel.xyz</domain>
+    </domain-config>
+    
+    <!-- Allow HTTPS everywhere -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

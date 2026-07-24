@@ -4,14 +4,16 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Room database for SMS Forwarder.
- * Version 1 — stores SMS log entries with forward status.
+ * Version 2 — Added retry fields for persistent message queue.
  */
 @Database(
     entities = [SmsLog::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -23,6 +25,19 @@ abstract class AppDatabase : RoomDatabase() {
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
+
+        /**
+         * Migration from version 1 to 2 — adds retry fields.
+         */
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add new columns for retry functionality
+                database.execSQL("ALTER TABLE sms_logs ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE sms_logs ADD COLUMN max_retries INTEGER NOT NULL DEFAULT 10")
+                database.execSQL("ALTER TABLE sms_logs ADD COLUMN next_retry_at INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE sms_logs ADD COLUMN last_attempt_at INTEGER NOT NULL DEFAULT 0")
+            }
+        }
 
         /**
          * Get the singleton instance of the database.
@@ -40,6 +55,7 @@ abstract class AppDatabase : RoomDatabase() {
                 AppDatabase::class.java,
                 DATABASE_NAME
             )
+                .addMigrations(MIGRATION_1_2)
                 .fallbackToDestructiveMigration()
                 .build()
         }

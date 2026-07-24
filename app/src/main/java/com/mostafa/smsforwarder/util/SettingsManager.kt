@@ -26,8 +26,15 @@ class SettingsManager(context: Context) {
         private const val KEY_KEYWORDS = "keywords"
         private const val KEY_NEGATIVE_KEYWORDS = "negative_keywords"
 
+        // Retry settings
+        private const val KEY_MAX_RETRIES = "max_retries"
+        private const val KEY_RETRY_ENABLED = "retry_enabled"
+
         // Separator for list storage
         private const val LIST_SEPARATOR = "|||"
+
+        // Default values
+        const val DEFAULT_MAX_RETRIES = 10
     }
 
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -72,6 +79,16 @@ class SettingsManager(context: Context) {
     var negativeKeywords: List<String>
         get() = getStringList(KEY_NEGATIVE_KEYWORDS)
         set(value) = setStringList(KEY_NEGATIVE_KEYWORDS, value)
+
+    // ── Retry Settings ────────────────────────────────────────────────
+
+    var retryEnabled: Boolean
+        get() = prefs.getBoolean(KEY_RETRY_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_RETRY_ENABLED, value).apply()
+
+    var maxRetries: Int
+        get() = prefs.getInt(KEY_MAX_RETRIES, DEFAULT_MAX_RETRIES)
+        set(value) = prefs.edit().putInt(KEY_MAX_RETRIES, value).apply()
 
     // ── Helper Methods ─────────────────────────────────────────────────
 

@@ -376,8 +376,7 @@
                     android:layout_weight="1"
                     android:text="@string/menu_logs"
                     android:textSize="13sp"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    app:icon="@android:drawable/ic_menu_recent_history"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_marginEnd="6dp" />
 
                 <com.google.android.material.button.MaterialButton
@@ -387,8 +386,7 @@
                     android:layout_weight="1"
                     android:text="@string/menu_settings"
                     android:textSize="13sp"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    app:icon="@android:drawable/ic_menu_manage"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_marginStart="6dp" />
 
             </LinearLayout>

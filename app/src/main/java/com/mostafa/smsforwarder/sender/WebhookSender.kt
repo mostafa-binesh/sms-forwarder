@@ -39,9 +39,9 @@ object WebhookSender {
         sender: String,
         message: String
     ): Result<Unit> {
+        // Normalize URL: auto-add /api/sms if missing
+        val normalizedUrl = normalizeSmsUrl(webhookUrl)
         return try {
-            // Normalize URL: auto-add /api/sms if missing
-            val normalizedUrl = normalizeSmsUrl(webhookUrl)
             val url = URL(normalizedUrl)
             val connection = url.openConnection() as HttpURLConnection
 

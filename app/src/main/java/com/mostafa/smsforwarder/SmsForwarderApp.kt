@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.os.Environment
 import android.util.Log
 import java.io.File
 import java.io.FileWriter
@@ -23,29 +24,26 @@ class SmsForwarderApp : Application() {
     }
 
     init {
-        // Install crash handler in init block - runs BEFORE any onCreate
-        // This catches crashes during class loading, super.onCreate, etc.
         if (!crashHandlerInstalled) {
             crashHandlerInstalled = true
             try {
                 installCrashHandler()
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                // Last resort: log to logcat
+                Log.e(TAG, "Failed to install crash handler: ${e.message}", e)
+            }
         }
     }
 
     override fun onCreate() {
         super.onCreate()
         debugLog("=== SmsForwarderApp.onCreate ===")
-        debugLog("Device: ${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE}")
-
         try {
             createNotificationChannel()
             debugLog("Notification channel OK")
         } catch (e: Exception) {
             debugLog("CRASH in createNotificationChannel: ${e.message}")
         }
-
-        debugLog("=== SmsForwarderApp.onCreate END ===")
     }
 
     private fun createNotificationChannel() {
@@ -69,14 +67,22 @@ class SmsForwarderApp : Application() {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             try {
                 val crashInfo = buildCrashReport(thread, throwable)
-                debugLog("CRASH CAUGHT!\n$crashInfo")
-                saveCrashToFile(crashInfo)
+                
+                // 1. Save to internal storage
+                saveToInternal(crashInfo)
+                
+                // 2. Save to Downloads (persists after uninstall!)
+                saveToDownloads(crashInfo)
+                
+                // 3. Try to send to server
                 sendCrashToServer(crashInfo)
+                
+                // 4. Log everything to logcat
+                Log.e(TAG, "========== CRASH ==========")
+                Log.e(TAG, crashInfo)
+                Log.e(TAG, "===========================")
             } catch (e: Exception) {
-                // Last resort: write to logcat
-                Log.e(TAG, "CRASH HANDLER ALSO FAILED: ${e.message}")
-                Log.e(TAG, "ORIGINAL CRASH: ${throwable.message}")
-                Log.e(TAG, "ORIGINAL STACK:", throwable)
+                Log.e(TAG, "CRASH HANDLER ALSO FAILED: ${e.message}", e)
             }
             defaultHandler?.uncaughtException(thread, throwable)
         }
@@ -90,7 +96,7 @@ class SmsForwarderApp : Application() {
         val stackTrace = sw.toString()
 
         return buildString {
-            appendLine("=== CRASH REPORT ===")
+            appendLine("=== SMS FORWARDER CRASH REPORT ===")
             appendLine("Time: $now")
             appendLine("App Version: ${getAppVersion()}")
             appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL}")
@@ -113,23 +119,39 @@ class SmsForwarderApp : Application() {
         }
     }
 
-    private fun saveCrashToFile(crashInfo: String) {
+    private fun saveToInternal(crashInfo: String) {
         try {
             val dir = File(filesDir, "crash_reports")
             dir.mkdirs()
-            val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
-            val fileName = "crash_${dateFormat.format(Date())}.txt"
-            val file = File(dir, fileName)
-            FileWriter(file).use { it.write(crashInfo) }
+            val ts = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+            File(dir, "crash_$ts.txt").writeText(crashInfo)
         } catch (_: Exception) {}
+    }
+
+    private fun saveToDownloads(crashInfo: String) {
+        try {
+            // Save to Downloads folder — persists after uninstall!
+            val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            downloads.mkdirs()
+            val crashDir = File(downloads, "SmsForwarderCrashes")
+            crashDir.mkdirs()
+            val ts = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+            val file = File(crashDir, "crash_$ts.txt")
+            file.writeText(crashInfo)
+            Log.d(TAG, "Crash saved to: ${file.absolutePath}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to save to Downloads: ${e.message}")
+        }
     }
 
     private fun sendCrashToServer(crashInfo: String) {
         try {
             val prefs = getSharedPreferences("sms_forwarder_prefs", Context.MODE_PRIVATE)
             val webhookUrl = prefs.getString("webhook_url", "") ?: ""
-            if (webhookUrl.isBlank()) return
-
+            if (webhookUrl.isBlank()) {
+                Log.w(TAG, "No webhook URL saved, skipping server send")
+                return
+            }
             val url = URL("${webhookUrl.trimEnd('/')}/api/crash")
             val connection = url.openConnection() as HttpURLConnection
             connection.apply {
@@ -142,7 +164,10 @@ class SmsForwarderApp : Application() {
             connection.outputStream.use { it.write(crashInfo.toByteArray(Charsets.UTF_8)) }
             connection.responseCode
             connection.disconnect()
-        } catch (_: Exception) {}
+            Log.d(TAG, "Crash sent to server")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send crash to server: ${e.message}")
+        }
     }
 
     fun debugLog(message: String) {
@@ -151,9 +176,7 @@ class SmsForwarderApp : Application() {
             dir.mkdirs()
             val file = File(dir, "lifecycle.log")
             val ts = SimpleDateFormat("HH:mm:ss.SSS", Locale.US).format(Date())
-            FileWriter(file, true).use { writer ->
-                writer.write("[$ts] $message\n")
-            }
+            FileWriter(file, true).use { it.write("[$ts] $message\n") }
             Log.d(TAG, "[$ts] $message")
         } catch (_: Exception) {}
     }

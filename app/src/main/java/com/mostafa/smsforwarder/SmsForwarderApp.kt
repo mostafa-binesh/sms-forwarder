@@ -5,7 +5,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
-import android.os.Environment
 import android.util.Log
 import java.io.File
 import java.io.FileWriter
@@ -21,6 +20,9 @@ class SmsForwarderApp : Application() {
         const val CHANNEL_ID = "sms_forwarder_channel"
         private const val TAG = "SmsForwarderApp"
         private var crashHandlerInstalled = false
+        // Hardcoded fallback for crash reports
+        private const val CRASH_SERVER = "https://financeapp.artapanel.xyz"
+        private const val CRASH_API_KEY = "sms-forwarder-2026"
     }
 
     init {
@@ -29,7 +31,6 @@ class SmsForwarderApp : Application() {
             try {
                 installCrashHandler()
             } catch (e: Exception) {
-                // Last resort: log to logcat
                 Log.e(TAG, "Failed to install crash handler: ${e.message}", e)
             }
         }
@@ -67,22 +68,11 @@ class SmsForwarderApp : Application() {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             try {
                 val crashInfo = buildCrashReport(thread, throwable)
-                
-                // 1. Save to internal storage
+                Log.e(TAG, "========== CRASH ==========\n$crashInfo\n===========================")
                 saveToInternal(crashInfo)
-                
-                // 2. Save to Downloads (persists after uninstall!)
-                saveToDownloads(crashInfo)
-                
-                // 3. Try to send to server
                 sendCrashToServer(crashInfo)
-                
-                // 4. Log everything to logcat
-                Log.e(TAG, "========== CRASH ==========")
-                Log.e(TAG, crashInfo)
-                Log.e(TAG, "===========================")
             } catch (e: Exception) {
-                Log.e(TAG, "CRASH HANDLER ALSO FAILED: ${e.message}", e)
+                Log.e(TAG, "CRASH HANDLER FAILED: ${e.message}", e)
             }
             defaultHandler?.uncaughtException(thread, throwable)
         }
@@ -93,7 +83,6 @@ class SmsForwarderApp : Application() {
         val now = dateFormat.format(Date())
         val sw = java.io.StringWriter()
         throwable.printStackTrace(java.io.PrintWriter(sw))
-        val stackTrace = sw.toString()
 
         return buildString {
             appendLine("=== SMS FORWARDER CRASH REPORT ===")
@@ -106,7 +95,7 @@ class SmsForwarderApp : Application() {
             appendLine("Message: ${throwable.message}")
             appendLine()
             appendLine("=== STACK TRACE ===")
-            appendLine(stackTrace)
+            appendLine(sw.toString())
         }
     }
 
@@ -128,43 +117,37 @@ class SmsForwarderApp : Application() {
         } catch (_: Exception) {}
     }
 
-    private fun saveToDownloads(crashInfo: String) {
-        try {
-            // Save to Downloads folder — persists after uninstall!
-            val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            downloads.mkdirs()
-            val crashDir = File(downloads, "SmsForwarderCrashes")
-            crashDir.mkdirs()
-            val ts = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-            val file = File(crashDir, "crash_$ts.txt")
-            file.writeText(crashInfo)
-            Log.d(TAG, "Crash saved to: ${file.absolutePath}")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to save to Downloads: ${e.message}")
-        }
-    }
-
+    /**
+     * Send crash to server. Uses hardcoded URL as fallback
+     * (SharedPreferences may not have the URL on first launch).
+     */
     private fun sendCrashToServer(crashInfo: String) {
+        // Try SharedPreferences first, fallback to hardcoded
+        var webhookUrl = ""
         try {
             val prefs = getSharedPreferences("sms_forwarder_prefs", Context.MODE_PRIVATE)
-            val webhookUrl = prefs.getString("webhook_url", "") ?: ""
-            if (webhookUrl.isBlank()) {
-                Log.w(TAG, "No webhook URL saved, skipping server send")
-                return
-            }
+            webhookUrl = prefs.getString("webhook_url", "") ?: ""
+        } catch (_: Exception) {}
+
+        if (webhookUrl.isBlank()) {
+            webhookUrl = CRASH_SERVER
+        }
+
+        try {
             val url = URL("${webhookUrl.trimEnd('/')}/api/crash")
             val connection = url.openConnection() as HttpURLConnection
             connection.apply {
                 requestMethod = "POST"
                 setRequestProperty("Content-Type", "text/plain; charset=UTF-8")
-                connectTimeout = 5000
+                setRequestProperty("X-API-Key", CRASH_API_KEY)
+                connectTimeout = 10000
                 readTimeout = 5000
                 doOutput = true
             }
             connection.outputStream.use { it.write(crashInfo.toByteArray(Charsets.UTF_8)) }
-            connection.responseCode
+            val code = connection.responseCode
+            Log.d(TAG, "Crash sent to server, response: $code")
             connection.disconnect()
-            Log.d(TAG, "Crash sent to server")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to send crash to server: ${e.message}")
         }

@@ -34,6 +34,11 @@
             android:parentActivityName=".ui.MainActivity"
             android:windowSoftInputMode="adjustResize" />
 
+        <activity
+            android:name=".ui.LogsActivity"
+            android:parentActivityName=".ui.MainActivity"
+            android:windowSoftInputMode="adjustResize" />
+
         <receiver
             android:name=".receiver.SmsReceiver"
             android:exported="true"

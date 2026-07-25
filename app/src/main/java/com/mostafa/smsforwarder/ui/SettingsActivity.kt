@@ -125,6 +125,11 @@ class SettingsActivity : AppCompatActivity() {
         etWebhookUrl.setText(settings.webhookUrl)
         etWebhookApiKey.setText(settings.webhookApiKey)
 
+        // Show hint if URL is empty
+        if (settings.webhookUrl.isBlank()) {
+            etWebhookUrl.hint = "http://191.101.113.64:9090"
+        }
+
         when (settings.filterMode) {
             FilterMode.ALL -> rgFilterMode.check(R.id.rb_filter_all)
             FilterMode.WHITELIST -> rgFilterMode.check(R.id.rb_filter_senders)
@@ -246,14 +251,17 @@ class SettingsActivity : AppCompatActivity() {
         btnTestConnection.text = getString(R.string.loading)
 
         lifecycleScope.launch {
-            val result = WebhookSender.testConnection(url, apiKey)
+            val result = withContext(Dispatchers.IO) {
+                WebhookSender.testConnection(url, apiKey)
+            }
             btnTestConnection.isEnabled = true
             btnTestConnection.text = getString(R.string.btn_test_connection)
 
             result.onSuccess { status ->
-                Toast.makeText(this@SettingsActivity, "✅ $status", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@SettingsActivity, status, Toast.LENGTH_LONG).show()
             }.onFailure { error ->
-                Toast.makeText(this@SettingsActivity, "❌ ${error.message}", Toast.LENGTH_LONG).show()
+                val msg = error.message ?: getString(R.string.error_generic)
+                Toast.makeText(this@SettingsActivity, msg, Toast.LENGTH_LONG).show()
             }
         }
     }

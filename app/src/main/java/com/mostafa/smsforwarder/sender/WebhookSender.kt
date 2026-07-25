@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.mostafa.smsforwarder.db.AppDatabase
 import com.mostafa.smsforwarder.db.SmsLog
+import com.mostafa.smsforwarder.util.AppLogger
 import com.mostafa.smsforwarder.util.SettingsManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +40,9 @@ object WebhookSender {
         message: String
     ): Result<Unit> {
         return try {
-            val url = URL(webhookUrl)
+            // Normalize URL: auto-add /api/sms if missing
+            val normalizedUrl = normalizeSmsUrl(webhookUrl)
+            val url = URL(normalizedUrl)
             val connection = url.openConnection() as HttpURLConnection
 
             connection.apply {
@@ -74,7 +77,7 @@ object WebhookSender {
                 Result.failure(Exception("Webhook error: $responseCode"))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to send SMS to webhook", e)
+            AppLogger.e(TAG, "Failed to send SMS to webhook", e)
             Result.failure(e)
         }
     }
@@ -174,6 +177,7 @@ object WebhookSender {
                                     attemptTime
                                 )
                                 Log.e(TAG, "Message ${smsLog.id} failed after $newRetryCount retries")
+                                AppLogger.e(TAG, "SMS #${smsLog.id} failed after $newRetryCount retries: ${result.exceptionOrNull()?.message}")
                             } else {
                                 dao.updateRetry(
                                     smsLog.id,
@@ -186,7 +190,7 @@ object WebhookSender {
                             }
                         }
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error processing message ${smsLog.id}", e)
+                        AppLogger.e(TAG, "Error processing message ${smsLog.id}", e)
                     }
                 }
 
@@ -214,11 +218,26 @@ object WebhookSender {
     }
 
     /**
-     * Test webhook connection.
+     * Test webhook connection — validates server is reachable and API key is accepted.
      */
     suspend fun testConnection(webhookUrl: String, apiKey: String): Result<String> {
         return try {
-            val healthUrl = webhookUrl.replace("/sms", "/health")
+            // Derive base URL and health endpoint from webhook URL
+            val baseUrl = webhookUrl.trimEnd('/')
+            val healthUrl = when {
+                // /api/sms or /api/sms/ → /api/health
+                baseUrl.endsWith("/api/sms") -> baseUrl.dropLast(4) + "/health"
+                baseUrl.endsWith("/api/sms/") -> baseUrl.dropLast(5) + "/health"
+                // /sms → /api/health (auto-add /api/ prefix)
+                baseUrl.endsWith("/sms") -> baseUrl.dropLast(4) + "api/health"
+                baseUrl.endsWith("/sms/") -> baseUrl.dropLast(5) + "api/health"
+                // /health → same
+                baseUrl.endsWith("/health") -> baseUrl
+                // base URL → /api/health
+                else -> "$baseUrl/api/health"
+            }
+
+            Log.d(TAG, "Testing connection to: $healthUrl")
             val url = URL(healthUrl)
             val connection = url.openConnection() as HttpURLConnection
 
@@ -230,15 +249,58 @@ object WebhookSender {
             }
 
             val responseCode = connection.responseCode
-            val responseBody = connection.inputStream.bufferedReader().use { it.readText() }
+            val body = if (responseCode in 200..299) {
+                connection.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "No response body"
+            }
+
+            connection.disconnect()
 
             if (responseCode in 200..299) {
-                Result.success("Connected! Server status: $responseBody")
+                Log.d(TAG, "Connection test OK: $responseCode")
+                AppLogger.i(TAG, "Connection test OK: $responseCode — $healthUrl")
+                Result.success("✅ اتصال موفق! سرور فعال است.\nوضعیت: $body")
             } else {
-                Result.failure(Exception("Server error: $responseCode"))
+                val errorMsg = "خطای سرور: $responseCode — $body"
+                AppLogger.e(TAG, errorMsg)
+                Result.failure(Exception(errorMsg))
             }
+        } catch (e: java.net.UnknownHostException) {
+            AppLogger.e(TAG, "DNS resolution failed for webhook URL", e)
+            Result.failure(Exception("❌ آدرس سرور یافت نشد. URL را بررسی کنید."))
+        } catch (e: java.net.ConnectException) {
+            AppLogger.e(TAG, "Connection refused: $webhookUrl", e)
+            Result.failure(Exception("❌ اتصال برقرار نشد. سرور در دسترس نیست."))
+        } catch (e: java.net.SocketTimeoutException) {
+            AppLogger.e(TAG, "Connection timed out: $webhookUrl", e)
+            Result.failure(Exception("❌ اتصال بیش از حد طول کشید (timeout)."))
+        } catch (e: java.net.MalformedURLException) {
+            AppLogger.e(TAG, "Invalid URL: $webhookUrl", e)
+            Result.failure(Exception("❌ آدرس URL نامعتبر است."))
         } catch (e: Exception) {
-            Result.failure(e)
+            AppLogger.e(TAG, "Unexpected error during connection test", e)
+            Result.failure(Exception("❌ خطا: ${e.message ?: e.javaClass.simpleName}"))
+        }
+    }
+
+    /**
+     * Normalize webhook URL to always point to /api/sms.
+     * Handles: base URL, /sms, /api/sms, /api/data — all map to /api/sms.
+     */
+    private fun normalizeSmsUrl(webhookUrl: String): String {
+        val base = webhookUrl.trimEnd('/')
+        return when {
+            base.endsWith("/api/sms") -> base
+            base.endsWith("/api/sms/") -> base.trimEnd('/')
+            base.endsWith("/api/data") -> base.dropLast(4) + "sms"
+            base.endsWith("/sms") -> {
+                val prefix = base.dropLast(4)
+                if (prefix.endsWith("/api/")) base
+                else "${prefix}api/sms"
+            }
+            base.endsWith("/sms/") -> normalizeSmsUrl(base.trimEnd('/'))
+            else -> "$base/api/sms"
         }
     }
 

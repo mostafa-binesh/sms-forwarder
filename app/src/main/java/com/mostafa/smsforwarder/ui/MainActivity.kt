@@ -53,6 +53,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvStatFailed: TextView
     private lateinit var tvStatFiltered: TextView
 
+    // Views — Quick Actions
+    private lateinit var btnViewLogs: com.google.android.material.button.MaterialButton
+    private lateinit var btnOpenSettings: com.google.android.material.button.MaterialButton
+
     // Views — Recent SMS
     private lateinit var tvNoSms: TextView
     private lateinit var llRecentSms: LinearLayout
@@ -108,6 +112,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.menu_logs -> {
+                val intent = Intent(this, LogsActivity::class.java)
+                startActivity(intent)
+                true
+            }
             R.id.menu_settings -> {
                 val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)
@@ -130,6 +139,8 @@ class MainActivity : AppCompatActivity() {
         tvStatFiltered = findViewById(R.id.tv_stat_filtered)
         tvNoSms = findViewById(R.id.tv_no_sms)
         llRecentSms = findViewById(R.id.ll_recent_sms)
+        btnViewLogs = findViewById(R.id.btn_view_logs)
+        btnOpenSettings = findViewById(R.id.btn_open_settings)
     }
 
     private fun setupToolbar() {
@@ -146,6 +157,14 @@ class MainActivity : AppCompatActivity() {
         switchEnabled.setOnCheckedChangeListener { _, isChecked ->
             settings.isEnabled = isChecked
             updateDashboard()
+        }
+
+        btnViewLogs.setOnClickListener {
+            startActivity(Intent(this, LogsActivity::class.java))
+        }
+
+        btnOpenSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
 

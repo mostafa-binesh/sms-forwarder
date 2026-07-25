@@ -130,4 +130,21 @@
     <string name="dialog_confirm_delete">آیا از حذف این مورد اطمینان دارید؟</string>
     <string name="loading">در حال بارگذاری…</string>
     <string name="notification_channel_name"> forwarded SMS</string>
+
+    <!-- Logs -->
+    <string name="logs_title">لاگ‌ها</string>
+    <string name="menu_logs">لاگ‌ها</string>
+    <string name="logs_stat_all">همه</string>
+    <string name="logs_stat_success">ارسال</string>
+    <string name="logs_stat_failed">ناموفق</string>
+    <string name="logs_stat_filtered">فیلتر</string>
+    <string name="logs_stat_pending">در انتظار</string>
+    <string name="logs_filter_all">همه</string>
+    <string name="logs_filter_success">✅ ارسال شده</string>
+    <string name="logs_filter_failed">❌ ناموفق</string>
+    <string name="logs_filter_filtered">🔇 فیلتر شده</string>
+    <string name="logs_search_hint">جستجو در لاگ‌ها…</string>
+    <string name="logs_empty">هنوز لاگی وجود ندارد</string>
+    <string name="logs_empty_errors">هنوز خطایی ثبت نشده</string>
+    <string name="logs_label_sender">فرستنده:</string>
 </resources>

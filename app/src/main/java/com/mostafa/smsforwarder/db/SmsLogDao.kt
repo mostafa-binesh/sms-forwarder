@@ -34,6 +34,12 @@ interface SmsLogDao {
     fun getAll(): Flow<List<SmsLog>>
 
     /**
+     * Get all SMS logs as a one-shot list (non-reactive).
+     */
+    @Query("SELECT * FROM sms_logs ORDER BY timestamp DESC")
+    suspend fun getAllOnce(): List<SmsLog>
+
+    /**
      * Get all pending messages that are due for retry.
      */
     @Query("SELECT * FROM sms_logs WHERE forward_status = 'PENDING' AND next_retry_at <= :currentTime AND retry_count < max_retries ORDER BY timestamp ASC")
@@ -110,4 +116,10 @@ interface SmsLogDao {
      */
     @Query("DELETE FROM sms_logs WHERE forward_status = 'PENDING' AND retry_count >= max_retries")
     suspend fun cleanUpExhaustedRetries()
+
+    /**
+     * Reset a failed message back to PENDING for manual retry.
+     */
+    @Query("UPDATE sms_logs SET forward_status = 'PENDING', retry_count = 0, next_retry_at = :nextRetryAt, error_message = NULL WHERE id = :id AND forward_status = 'FAILED'")
+    suspend fun resetForRetry(id: Long, nextRetryAt: Long)
 }

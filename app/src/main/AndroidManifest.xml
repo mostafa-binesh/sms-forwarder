@@ -7,7 +7,6 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
     <application
         android:name=".SmsForwarderApp"
@@ -19,6 +18,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SmsForwarder"
         tools:targetApi="34">
+
+        <provider
+            android:name=".CrashContentProvider"
+            android:authorities="${applicationId}.crash"
+            android:exported="false" />
 
         <activity
             android:name=".ui.MainActivity"

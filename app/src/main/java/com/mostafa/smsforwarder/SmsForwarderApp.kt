@@ -16,17 +16,27 @@ import java.util.Locale
 
 class SmsForwarderApp : Application() {
 
+    companion object {
+        const val CHANNEL_ID = "sms_forwarder_channel"
+        private const val TAG = "SmsForwarderApp"
+        private var crashHandlerInstalled = false
+    }
+
+    init {
+        // Install crash handler in init block - runs BEFORE any onCreate
+        // This catches crashes during class loading, super.onCreate, etc.
+        if (!crashHandlerInstalled) {
+            crashHandlerInstalled = true
+            try {
+                installCrashHandler()
+            } catch (_: Exception) {}
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
-        debugLog("=== SmsForwarderApp.onCreate START ===")
-        debugLog("Device: ${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
-
-        try {
-            installCrashHandler()
-            debugLog("Crash handler installed OK")
-        } catch (e: Exception) {
-            debugLog("CRASH in installCrashHandler: ${e.message}")
-        }
+        debugLog("=== SmsForwarderApp.onCreate ===")
+        debugLog("Device: ${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE}")
 
         try {
             createNotificationChannel()
@@ -63,7 +73,10 @@ class SmsForwarderApp : Application() {
                 saveCrashToFile(crashInfo)
                 sendCrashToServer(crashInfo)
             } catch (e: Exception) {
-                debugLog("CRASH HANDLER FAILED: ${e.message}\n${e.stackTraceToString()}")
+                // Last resort: write to logcat
+                Log.e(TAG, "CRASH HANDLER ALSO FAILED: ${e.message}")
+                Log.e(TAG, "ORIGINAL CRASH: ${throwable.message}")
+                Log.e(TAG, "ORIGINAL STACK:", throwable)
             }
             defaultHandler?.uncaughtException(thread, throwable)
         }
@@ -72,7 +85,6 @@ class SmsForwarderApp : Application() {
     private fun buildCrashReport(thread: Thread, throwable: Throwable): String {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
         val now = dateFormat.format(Date())
-
         val sw = java.io.StringWriter()
         throwable.printStackTrace(java.io.PrintWriter(sw))
         val stackTrace = sw.toString()
@@ -133,15 +145,6 @@ class SmsForwarderApp : Application() {
         } catch (_: Exception) {}
     }
 
-    companion object {
-        const val CHANNEL_ID = "sms_forwarder_channel"
-        private const val TAG = "SmsForwarderApp"
-    }
-
-    /**
-     * Write to debug log file in app's internal storage.
-     * Each line is timestamped. Use this to trace lifecycle.
-     */
     fun debugLog(message: String) {
         try {
             val dir = File(filesDir, "debug")

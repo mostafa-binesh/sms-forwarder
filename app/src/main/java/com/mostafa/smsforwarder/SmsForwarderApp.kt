@@ -18,8 +18,24 @@ class SmsForwarderApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
-        installCrashHandler()
+        debugLog("=== SmsForwarderApp.onCreate START ===")
+        debugLog("Device: ${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
+
+        try {
+            installCrashHandler()
+            debugLog("Crash handler installed OK")
+        } catch (e: Exception) {
+            debugLog("CRASH in installCrashHandler: ${e.message}")
+        }
+
+        try {
+            createNotificationChannel()
+            debugLog("Notification channel OK")
+        } catch (e: Exception) {
+            debugLog("CRASH in createNotificationChannel: ${e.message}")
+        }
+
+        debugLog("=== SmsForwarderApp.onCreate END ===")
     }
 
     private fun createNotificationChannel() {
@@ -33,7 +49,6 @@ class SmsForwarderApp : Application() {
                 enableVibration(false)
                 setShowBadge(false)
             }
-
             val manager = getSystemService(NotificationManager::class.java)
             manager?.createNotificationChannel(channel)
         }
@@ -44,12 +59,12 @@ class SmsForwarderApp : Application() {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             try {
                 val crashInfo = buildCrashReport(thread, throwable)
+                debugLog("CRASH CAUGHT!\n$crashInfo")
                 saveCrashToFile(crashInfo)
                 sendCrashToServer(crashInfo)
-            } catch (_: Exception) {
-                // Don't crash the crash handler
+            } catch (e: Exception) {
+                debugLog("CRASH HANDLER FAILED: ${e.message}\n${e.stackTraceToString()}")
             }
-            // Let the default handler show the crash dialog
             defaultHandler?.uncaughtException(thread, throwable)
         }
     }
@@ -62,7 +77,7 @@ class SmsForwarderApp : Application() {
         throwable.printStackTrace(java.io.PrintWriter(sw))
         val stackTrace = sw.toString()
 
-        val deviceInfo = buildString {
+        return buildString {
             appendLine("=== CRASH REPORT ===")
             appendLine("Time: $now")
             appendLine("App Version: ${getAppVersion()}")
@@ -75,8 +90,6 @@ class SmsForwarderApp : Application() {
             appendLine("=== STACK TRACE ===")
             appendLine(stackTrace)
         }
-
-        return deviceInfo
     }
 
     private fun getAppVersion(): String {
@@ -96,15 +109,11 @@ class SmsForwarderApp : Application() {
             val fileName = "crash_${dateFormat.format(Date())}.txt"
             val file = File(dir, fileName)
             FileWriter(file).use { it.write(crashInfo) }
-            Log.e(TAG, "Crash saved to: ${file.absolutePath}")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to save crash report", e)
-        }
+        } catch (_: Exception) {}
     }
 
     private fun sendCrashToServer(crashInfo: String) {
         try {
-            // Read webhook URL from SharedPreferences (don't depend on SettingsManager)
             val prefs = getSharedPreferences("sms_forwarder_prefs", Context.MODE_PRIVATE)
             val webhookUrl = prefs.getString("webhook_url", "") ?: ""
             if (webhookUrl.isBlank()) return
@@ -118,19 +127,31 @@ class SmsForwarderApp : Application() {
                 readTimeout = 5000
                 doOutput = true
             }
-            connection.outputStream.use { os ->
-                os.write(crashInfo.toByteArray(Charsets.UTF_8))
-            }
-            connection.responseCode // trigger the request
+            connection.outputStream.use { it.write(crashInfo.toByteArray(Charsets.UTF_8)) }
+            connection.responseCode
             connection.disconnect()
-            Log.d(TAG, "Crash report sent to server")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to send crash report to server", e)
-        }
+        } catch (_: Exception) {}
     }
 
     companion object {
         const val CHANNEL_ID = "sms_forwarder_channel"
         private const val TAG = "SmsForwarderApp"
+    }
+
+    /**
+     * Write to debug log file in app's internal storage.
+     * Each line is timestamped. Use this to trace lifecycle.
+     */
+    fun debugLog(message: String) {
+        try {
+            val dir = File(filesDir, "debug")
+            dir.mkdirs()
+            val file = File(dir, "lifecycle.log")
+            val ts = SimpleDateFormat("HH:mm:ss.SSS", Locale.US).format(Date())
+            FileWriter(file, true).use { writer ->
+                writer.write("[$ts] $message\n")
+            }
+            Log.d(TAG, "[$ts] $message")
+        } catch (_: Exception) {}
     }
 }

@@ -31,6 +31,7 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.mostafa.smsforwarder.SmsForwarderApp
 
 class MainActivity : AppCompatActivity() {
 
@@ -85,17 +86,76 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val app = application as SmsForwarderApp
+        app.debugLog("=== MainActivity.onCreate START ===")
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        app.debugLog("super.onCreate OK")
 
-        settings = SettingsManager(this)
-        db = AppDatabase.getInstance(this)
+        try {
+            setContentView(R.layout.activity_main)
+            app.debugLog("setContentView OK")
+        } catch (e: Exception) {
+            app.debugLog("CRASH in setContentView: ${e.javaClass.name}: ${e.message}")
+            throw e
+        }
 
-        initViews()
-        setupToolbar()
-        loadSettings()
-        setupListeners()
-        observeRecentSms()
+        try {
+            settings = SettingsManager(this)
+            app.debugLog("SettingsManager OK")
+        } catch (e: Exception) {
+            app.debugLog("CRASH in SettingsManager: ${e.javaClass.name}: ${e.message}")
+            throw e
+        }
+
+        try {
+            db = AppDatabase.getInstance(this)
+            app.debugLog("AppDatabase OK")
+        } catch (e: Exception) {
+            app.debugLog("CRASH in AppDatabase: ${e.javaClass.name}: ${e.message}")
+            throw e
+        }
+
+        try {
+            initViews()
+            app.debugLog("initViews OK")
+        } catch (e: Exception) {
+            app.debugLog("CRASH in initViews: ${e.javaClass.name}: ${e.message}")
+            throw e
+        }
+
+        try {
+            setupToolbar()
+            app.debugLog("setupToolbar OK")
+        } catch (e: Exception) {
+            app.debugLog("CRASH in setupToolbar: ${e.javaClass.name}: ${e.message}")
+            throw e
+        }
+
+        try {
+            loadSettings()
+            app.debugLog("loadSettings OK")
+        } catch (e: Exception) {
+            app.debugLog("CRASH in loadSettings: ${e.javaClass.name}: ${e.message}")
+            throw e
+        }
+
+        try {
+            setupListeners()
+            app.debugLog("setupListeners OK")
+        } catch (e: Exception) {
+            app.debugLog("CRASH in setupListeners: ${e.javaClass.name}: ${e.message}")
+            throw e
+        }
+
+        try {
+            observeRecentSms()
+            app.debugLog("observeRecentSms OK")
+        } catch (e: Exception) {
+            app.debugLog("CRASH in observeRecentSms: ${e.javaClass.name}: ${e.message}")
+            throw e
+        }
+
+        app.debugLog("=== MainActivity.onCreate END ===")
     }
 
     override fun onResume() {

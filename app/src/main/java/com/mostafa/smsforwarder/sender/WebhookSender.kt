@@ -77,7 +77,14 @@ object WebhookSender {
                 Result.failure(Exception("Webhook error: $responseCode"))
             }
         } catch (e: Exception) {
-            AppLogger.e(TAG, "Failed to send SMS to webhook", e)
+            val detail = when (e) {
+                is java.net.SocketTimeoutException -> "Timeout after 10s — سرور پاسخ نمی‌دهد"
+                is java.net.ConnectException -> "اتصال برقرار نشد: ${e.message}"
+                is java.net.UnknownHostException -> "آدرس DNS یافت نشد"
+                is javax.net.ssl.SSLException -> "خطای SSL: ${e.message}"
+                else -> "${e.javaClass.simpleName}: ${e.message}"
+            }
+            AppLogger.e(TAG, "Failed to send SMS to webhook ($normalizedUrl): $detail", e)
             Result.failure(e)
         }
     }

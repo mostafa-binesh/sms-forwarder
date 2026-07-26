@@ -3,6 +3,7 @@ package com.mostafa.smsforwarder.sender
 import android.content.Context
 import android.util.Log
 import com.mostafa.smsforwarder.db.AppDatabase
+import com.mostafa.smsforwarder.db.SmsLog
 import com.mostafa.smsforwarder.util.AppLogger
 import com.mostafa.smsforwarder.util.SettingsManager
 import kotlinx.coroutines.CoroutineScope
@@ -15,19 +16,17 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Handles sending SMS to webhook server with retry logic.
+ * Sends bank SMS to webhook server with retry logic.
  */
 object WebhookSender {
-    private const val TAG = "WebhookSender"
-    private const val BASE_BACKOFF_MS = 5_000L    // 5 seconds
-    private const val MAX_BACKOFF_MS = 300_000L    // 5 minutes
 
+    private const val TAG = "WebhookSender"
+    private const val BASE_BACKOFF_MS = 5000L // 5 seconds
+    private const val MAX_BACKOFF_MS = 300000L // 5 minutes
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    @Volatile
-    private var workerRunning = false
 
     /**
-     * Send SMS to webhook server.
+     * Send SMS to webhook server with immediate attempt.
      * @param webhookUrl The webhook endpoint URL
      * @param apiKey API key for authentication
      * @param sender SMS sender number
@@ -40,7 +39,7 @@ object WebhookSender {
         sender: String,
         message: String
     ): Result<Unit> {
-        // Normalize URL OUTSIDE try so it's available in catch
+        // Normalize URL: auto-add /api/sms if missing
         val normalizedUrl = normalizeSmsUrl(webhookUrl)
         return try {
             val url = URL(normalizedUrl)
@@ -48,14 +47,11 @@ object WebhookSender {
 
             connection.apply {
                 requestMethod = "POST"
-                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("X-API-Key", apiKey)
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 15_000
-                readTimeout = 15_000
+                connectTimeout = 10_000
+                readTimeout = 10_000
                 doOutput = true
-                doInput = true
-                instanceFollowRedirects = true
             }
 
             // Build JSON body
@@ -64,67 +60,31 @@ object WebhookSender {
                 put("message", message)
             }
 
-            Log.d(TAG, "Sending POST to $normalizedUrl (${jsonBody.length} bytes)")
-
             // Write to output stream
-            val os = connection.outputStream
-            OutputStreamWriter(os, Charsets.UTF_8).use { writer ->
+            OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { writer ->
                 writer.write(jsonBody)
                 writer.flush()
             }
-            os.close()
 
             val responseCode = connection.responseCode
-            val responseMessage = connection.responseMessage ?: ""
-
-            // Read response — use inputStream for 2xx, errorStream for others
-            val responseBody = try {
-                if (responseCode in 200..299) {
-                    connection.inputStream.bufferedReader().use { it.readText() }
-                } else {
-                    connection.errorStream?.bufferedReader()?.use { it.readText() }
-                        ?: "No response body (code: $responseCode)"
-                }
-            } catch (_: Exception) {
-                "Could not read response body"
-            }
-
-            Log.d(TAG, "Response: $responseCode $responseMessage — $responseBody")
+            val responseBody = connection.inputStream.bufferedReader().use { it.readText() }
 
             if (responseCode in 200..299) {
                 Log.d(TAG, "Successfully sent SMS to webhook: $responseCode")
-                AppLogger.i(TAG, "SMS sent OK: $responseCode — $sender")
                 Result.success(Unit)
             } else {
-                val errorMsg = "HTTP $responseCode: $responseBody"
-                Log.e(TAG, "Webhook error: $errorMsg")
-                AppLogger.e(TAG, "Webhook error: $errorMsg")
-                Result.failure(Exception(errorMsg))
+                Log.e(TAG, "Webhook error: $responseCode - $responseBody")
+                Result.failure(Exception("Webhook error: $responseCode"))
             }
-        } catch (e: java.net.SocketTimeoutException) {
-            val msg = "Timeout after 15s reaching $normalizedUrl"
-            Log.e(TAG, msg, e)
-            AppLogger.e(TAG, msg, e)
-            Result.failure(e)
-        } catch (e: java.net.ConnectException) {
-            val msg = "Connection refused: $normalizedUrl — ${e.message}"
-            Log.e(TAG, msg, e)
-            AppLogger.e(TAG, msg, e)
-            Result.failure(e)
-        } catch (e: java.net.UnknownHostException) {
-            val msg = "DNS failed: ${e.message}"
-            Log.e(TAG, msg, e)
-            AppLogger.e(TAG, msg, e)
-            Result.failure(e)
-        } catch (e: javax.net.ssl.SSLException) {
-            val msg = "SSL error: ${e.message}"
-            Log.e(TAG, msg, e)
-            AppLogger.e(TAG, msg, e)
-            Result.failure(e)
         } catch (e: Exception) {
-            val msg = "${e.javaClass.simpleName}: ${e.message}"
-            Log.e(TAG, "Failed to send SMS: $msg", e)
-            AppLogger.e(TAG, "Failed to send SMS ($normalizedUrl): $msg", e)
+            val detail = when (e) {
+                is java.net.SocketTimeoutException -> "Timeout after 10s — سرور پاسخ نمی‌دهد"
+                is java.net.ConnectException -> "اتصال برقرار نشد: ${e.message}"
+                is java.net.UnknownHostException -> "آدرس DNS یافت نشد"
+                is javax.net.ssl.SSLException -> "خطای SSL: ${e.message}"
+                else -> "${e.javaClass.simpleName}: ${e.message}"
+            }
+            AppLogger.e(TAG, "Failed to send SMS to webhook ($normalizedUrl): $detail", e)
             Result.failure(e)
         }
     }
@@ -144,7 +104,7 @@ object WebhookSender {
         val settings = SettingsManager(context)
 
         // Save to database first with PENDING status
-        val smsLog = com.mostafa.smsforwarder.db.SmsLog(
+        val smsLog = SmsLog(
             timestamp = System.currentTimeMillis(),
             sender = sender,
             messageBody = message,
@@ -249,7 +209,7 @@ object WebhookSender {
 
             } catch (e: Exception) {
                 Log.e(TAG, "Error in retry loop", e)
-                delay(30_000)
+                delay(60_000) // Wait longer on error
             }
         }
     }
@@ -285,28 +245,21 @@ object WebhookSender {
             }
 
             Log.d(TAG, "Testing connection to: $healthUrl")
-            AppLogger.i(TAG, "Testing connection: $healthUrl")
             val url = URL(healthUrl)
             val connection = url.openConnection() as HttpURLConnection
 
             connection.apply {
                 requestMethod = "GET"
                 setRequestProperty("X-API-Key", apiKey)
-                setRequestProperty("Accept", "application/json")
                 connectTimeout = 10_000
                 readTimeout = 10_000
             }
 
             val responseCode = connection.responseCode
-            val body = try {
-                if (responseCode in 200..299) {
-                    connection.inputStream.bufferedReader().use { it.readText() }
-                } else {
-                    connection.errorStream?.bufferedReader()?.use { it.readText() }
-                        ?: "No response body"
-                }
-            } catch (_: Exception) {
-                "Could not read response"
+            val body = if (responseCode in 200..299) {
+                connection.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "No response body"
             }
 
             connection.disconnect()
@@ -317,7 +270,6 @@ object WebhookSender {
                 Result.success("✅ اتصال موفق! سرور فعال است.\nوضعیت: $body")
             } else {
                 val errorMsg = "خطای سرور: $responseCode — $body"
-                Log.e(TAG, errorMsg)
                 AppLogger.e(TAG, errorMsg)
                 Result.failure(Exception(errorMsg))
             }
@@ -372,14 +324,7 @@ object WebhookSender {
         private val entries = mutableListOf<Pair<String, String>>()
 
         fun put(key: String, value: String) {
-            // Escape special JSON characters
-            val escaped = value
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t")
-            entries.add(key to "\"$escaped\"")
+            entries.add(key to "\"$value\"")
         }
 
         fun put(key: String, value: Number) {

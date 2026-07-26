@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<network_security-config>
-    <!-- Allow cleartext HTTP to our server IPs/domains -->
+<network-security-config>
+    <!-- Allow cleartext HTTP to our server IP -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">191.101.113.64</domain>
         <domain includeSubdomains="true">hermes.artapanel.xyz</domain>
-        <domain includeSubdomains="true">financeapp.artapanel.xyz</domain>
     </domain-config>
     
     <!-- Allow HTTPS everywhere -->
@@ -13,4 +12,4 @@
             <certificates src="system" />
         </trust-anchors>
     </base-config>
-</network_security-config>
+</network-security-config>

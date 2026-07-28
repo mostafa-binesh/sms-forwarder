@@ -122,4 +122,16 @@ interface SmsLogDao {
      */
     @Query("UPDATE sms_logs SET forward_status = 'PENDING', retry_count = 0, next_retry_at = :nextRetryAt, error_message = NULL WHERE id = :id AND forward_status = 'FAILED'")
     suspend fun resetForRetry(id: Long, nextRetryAt: Long)
+
+    /**
+     * Reset all failed messages back to PENDING for manual bulk retry.
+     */
+    @Query("UPDATE sms_logs SET forward_status = 'PENDING', retry_count = 0, next_retry_at = :nextRetryAt, error_message = NULL WHERE forward_status = 'FAILED'")
+    suspend fun resetAllFailedForRetry(nextRetryAt: Long): Int
+
+    /**
+     * Get the count of all managed SMS messages.
+     */
+    @Query("SELECT COUNT(*) FROM sms_logs")
+    suspend fun getAllCount(): Int
 }

@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App -->
-    <string name="app_name">SmsForwarder</string>
+    <string name="app_name">مدیریت پیامک</string>
 
     <!-- Dashboard -->
-    <string name="dashboard_title">SmsForwarder</string>
+    <string name="dashboard_title">مدیریت پیامک</string>
     <string name="menu_settings">تنظیمات</string>
-    <string name="status_forwarding_active">ارسال خودکار فعال</string>
-    <string name="status_forwarding_inactive">ارسال غیرفعال</string>
-    <string name="status_bot_configured">بات تنظیم شده</string>
-    <string name="status_bot_not_configured">بات تنظیم نشده</string>
+    <string name="status_forwarding_active">مدیریت پیامک فعال</string>
+    <string name="status_forwarding_inactive">مدیریت پیامک غیرفعال</string>
+    <string name="status_bot_configured">سرور تنظیم شده</string>
+    <string name="status_bot_not_configured">سرور تنظیم نشده</string>
     <string name="status_sms_granted">دسترسی SMS</string>
     <string name="status_sms_denied">دسترسی SMS غیرفعال</string>
-    <string name="stats_forwarded">ارسال شده</string>
+    <string name="stats_forwarded">مدیریت شده</string>
     <string name="stats_failed">ناموفق</string>
     <string name="stats_filtered">فیلتر شده</string>
     <string name="recent_sms_title">آخرین پیامکها</string>
@@ -147,4 +147,5 @@
     <string name="logs_empty">هنوز لاگی وجود ندارد</string>
     <string name="logs_empty_errors">هنوز خطایی ثبت نشده</string>
     <string name="logs_label_sender">فرستنده:</string>
+    <string name="btn_retry_all_failed">ارسال مجدد همه پیامکهای ناموفق</string>
 </resources>

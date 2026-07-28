@@ -23,6 +23,7 @@ import androidx.lifecycle.lifecycleScope
 import com.mostafa.smsforwarder.R
 import com.mostafa.smsforwarder.db.AppDatabase
 import com.mostafa.smsforwarder.db.SmsLog
+import com.mostafa.smsforwarder.sender.WebhookSender
 import com.mostafa.smsforwarder.util.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -56,6 +57,7 @@ class MainActivity : AppCompatActivity() {
     // Views — Quick Actions
     private lateinit var btnViewLogs: com.google.android.material.button.MaterialButton
     private lateinit var btnOpenSettings: com.google.android.material.button.MaterialButton
+    private lateinit var btnRetryFailed: com.google.android.material.button.MaterialButton
 
     // Views — Recent SMS
     private lateinit var tvNoSms: TextView
@@ -141,6 +143,7 @@ class MainActivity : AppCompatActivity() {
         llRecentSms = findViewById(R.id.ll_recent_sms)
         btnViewLogs = findViewById(R.id.btn_view_logs)
         btnOpenSettings = findViewById(R.id.btn_open_settings)
+        btnRetryFailed = findViewById(R.id.btn_retry_failed)
     }
 
     private fun setupToolbar() {
@@ -165,6 +168,10 @@ class MainActivity : AppCompatActivity() {
 
         btnOpenSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
+        btnRetryFailed.setOnClickListener {
+            retryAllFailedSms()
         }
     }
 
@@ -245,6 +252,27 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun retryAllFailedSms() {
+        lifecycleScope.launch {
+            if (!settings.isWebhookConfigured()) {
+                Toast.makeText(this@MainActivity, "تنظیمات سرور کامل نیست", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+
+            val count = withContext(Dispatchers.IO) {
+                db.smsLogDao().resetAllFailedForRetry(System.currentTimeMillis())
+            }
+
+            if (count == 0) {
+                Toast.makeText(this@MainActivity, "پیامک ناموفقی وجود ندارد", Toast.LENGTH_SHORT).show()
+            } else {
+                WebhookSender.startRetryWorker(this@MainActivity)
+                Toast.makeText(this@MainActivity, "$count پیامک برای ارسال مجدد در صف قرار گرفت", Toast.LENGTH_SHORT).show()
+                refreshStats()
+            }
+        }
+    }
+
     // ── Dashboard Updates ───────────────────────────────────────────
 
     private fun updateDashboard() {
@@ -321,6 +349,7 @@ class MainActivity : AppCompatActivity() {
                         "SUCCESS" -> "✅"
                         "FAILED" -> "❌"
                         "FILTERED" -> "🔇"
+                        "PENDING" -> "⏳"
                         else -> "❓"
                     }
 

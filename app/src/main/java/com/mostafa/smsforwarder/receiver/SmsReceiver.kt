@@ -7,10 +7,8 @@ import android.provider.Telephony
 import android.util.Log
 import com.mostafa.smsforwarder.db.AppDatabase
 import com.mostafa.smsforwarder.db.SmsLog
-import com.mostafa.smsforwarder.filter.BankFilter
 import com.mostafa.smsforwarder.sender.WebhookSender
 import com.mostafa.smsforwarder.util.SettingsManager
-import com.mostafa.smsforwarder.util.SmsParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -48,61 +46,32 @@ class SmsReceiver : BroadcastReceiver() {
     }
 
     private fun processSms(context: Context, sender: String, body: String, settings: SettingsManager) {
-        val filter = BankFilter(settings)
-        val shouldForward = filter.shouldForward(sender, body)
-
-        Log.d(TAG, "SMS from $sender, shouldForward=$shouldForward")
+        Log.d(TAG, "Managing SMS from $sender")
 
         val db = AppDatabase.getInstance(context)
         val dao = db.smsLogDao()
 
         scope.launch {
-            if (shouldForward) {
-                // Send to webhook server with retry logic
-                val webhookUrl = settings.webhookUrl
-                val apiKey = settings.webhookApiKey
+            val now = System.currentTimeMillis()
+            val isConfigured = settings.webhookUrl.isNotBlank() && settings.webhookApiKey.isNotBlank()
 
-                if (webhookUrl.isBlank() || apiKey.isBlank()) {
-                    Log.e(TAG, "Webhook not configured!")
-                    val smsLog = SmsLog(
-                        timestamp = System.currentTimeMillis(),
-                        sender = sender,
-                        messageBody = body,
-                        forwardStatus = "FAILED",
-                        errorMessage = "Webhook not configured"
-                    )
-                    dao.insert(smsLog)
-                    return@launch
-                }
+            val smsLog = SmsLog(
+                timestamp = now,
+                sender = sender,
+                messageBody = body,
+                forwardStatus = if (isConfigured) "PENDING" else "FAILED",
+                errorMessage = if (isConfigured) null else "Webhook not configured",
+                retryCount = 0,
+                maxRetries = settings.maxRetries,
+                nextRetryAt = now,
+                lastAttemptAt = 0
+            )
 
-                // Save to queue with PENDING status first
-                val smsLog = SmsLog(
-                    timestamp = System.currentTimeMillis(),
-                    sender = sender,
-                    messageBody = body,
-                    forwardStatus = "PENDING",
-                    retryCount = 0,
-                    maxRetries = settings.maxRetries,
-                    nextRetryAt = System.currentTimeMillis(),
-                    lastAttemptAt = 0
-                )
-                val id = dao.insert(smsLog)
-                Log.d(TAG, "SMS saved to queue with ID: $id, starting retry worker")
+            val id = dao.insert(smsLog)
+            Log.d(TAG, "SMS saved with ID: $id, status=${smsLog.forwardStatus}")
 
-                // Start the retry worker
+            if (isConfigured) {
                 WebhookSender.startRetryWorker(context)
-
-            } else {
-                // Log but don't forward
-                val smsLog = SmsLog(
-                    timestamp = System.currentTimeMillis(),
-                    sender = sender,
-                    messageBody = body,
-                    forwardStatus = "FILTERED",
-                    errorMessage = null
-                )
-                dao.insert(smsLog)
-                Log.d(TAG, "SMS from $sender was filtered out")
             }
         }
     }

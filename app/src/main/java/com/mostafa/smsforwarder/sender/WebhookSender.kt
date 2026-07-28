@@ -1,6 +1,7 @@
 package com.mostafa.smsforwarder.sender
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import com.mostafa.smsforwarder.db.AppDatabase
 import com.mostafa.smsforwarder.db.SmsLog
@@ -37,7 +38,9 @@ object WebhookSender {
         webhookUrl: String,
         apiKey: String,
         sender: String,
-        message: String
+        message: String,
+        localId: Long = 0,
+        receivedAt: Long = System.currentTimeMillis()
     ): Result<Unit> {
         // Normalize URL: auto-add /api/sms if missing
         val normalizedUrl = normalizeSmsUrl(webhookUrl)
@@ -58,6 +61,10 @@ object WebhookSender {
             val jsonBody = buildJsonObject {
                 put("sender", sender)
                 put("message", message)
+                put("timestamp", receivedAt)
+                put("local_id", localId)
+                put("device_id", "${Build.MANUFACTURER} ${Build.MODEL}")
+                put("source", "android_sms_manager")
             }
 
             // Write to output stream
@@ -67,7 +74,12 @@ object WebhookSender {
             }
 
             val responseCode = connection.responseCode
-            val responseBody = connection.inputStream.bufferedReader().use { it.readText() }
+            val responseBody = if (responseCode in 200..299) {
+                connection.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "No response body"
+            }
+            connection.disconnect()
 
             if (responseCode in 200..299) {
                 Log.d(TAG, "Successfully sent SMS to webhook: $responseCode")
@@ -164,7 +176,9 @@ object WebhookSender {
                             webhookUrl = webhookUrl,
                             apiKey = apiKey,
                             sender = smsLog.sender,
-                            message = smsLog.messageBody
+                            message = smsLog.messageBody,
+                            localId = smsLog.id,
+                            receivedAt = smsLog.timestamp
                         )
 
                         val attemptTime = System.currentTimeMillis()
@@ -324,7 +338,15 @@ object WebhookSender {
         private val entries = mutableListOf<Pair<String, String>>()
 
         fun put(key: String, value: String) {
-            entries.add(key to "\"$value\"")
+            val escaped = value
+                .replace("\", "\")
+                .replace(""", "\"")
+                .replace("
+", "
+")
+                .replace("", "")
+                .replace("	", "	")
+            entries.add(key to "\"$escaped\"")
         }
 
         fun put(key: String, value: Number) {
